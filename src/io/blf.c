@@ -177,7 +177,7 @@ void _add_object(struct BLFWriter * blf_writer, FILE * file, uint32_t obj_type, 
     blf_writer->object_count += 1;
 }
 
-void blf_create_logger(void * logger_ptr) {
+void blf_create_logger(void * logger_ptr, void * args) {
     struct Logger * logger = (struct Logger *)logger_ptr;
 
     logger->file = fopen(logger->file_name, "wb");

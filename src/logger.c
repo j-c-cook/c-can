@@ -9,7 +9,7 @@ const char *get_filename_ext(const char *file_name) {
     return dot + 1;
 }
 
-struct Logger generic_get_logger(char * file_name) {
+struct Logger generic_get_logger(char * file_name, void *args) {
     struct Logger logger;
 
     logger.file_name = file_name;
@@ -28,7 +28,7 @@ struct Logger generic_get_logger(char * file_name) {
 
     // Initialize the writer
     if (logger.methods.create_logger != NULL) {
-        logger.methods.create_logger(file_name);
+        logger.methods.create_logger(file_name, args);
     } else {
         logger.writer = NULL;
     }

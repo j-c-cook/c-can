@@ -4,7 +4,7 @@
 
 
 int main() {
-    struct Logger logger = generic_get_logger("file.blf");
+    struct Logger logger = generic_get_logger("file.blf", NULL);
 
     int s = create_socket();
     bind_socket(s, "can0");

@@ -43,7 +43,7 @@ struct BLFWriter {
     uint32_t object_count;
 };
 
-void blf_create_logger(void * logger_ptr);
+void blf_create_logger(void * logger_ptr, void * args);
 void blf_on_message_received(void *, struct Message * can_msg);
 void blf_rollover(void * logger, uint64_t filesize, const char * new_filename);
 void blf_stop_logger(void * logger);

@@ -5,7 +5,7 @@
 #include <can/io/blf/blf.h>
 
 struct Logger_vtable {
-    void (*create_logger)(void *);
+    void (*create_logger)(void *, void*);
     void (*on_message_received)(void *, struct Message *);
     void (*stop_logger)(void *);
 };
@@ -19,7 +19,7 @@ struct Logger {
     struct Logger_vtable methods;
 };
 
-struct Logger generic_get_logger(char * file_name);
+struct Logger generic_get_logger(char * file_name, void *args);
 void generic_on_message_received(struct Logger * logger, struct Message *can_msg);
 void generic_stop_logger(struct Logger * logger);
 
