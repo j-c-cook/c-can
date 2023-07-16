@@ -9,7 +9,7 @@ const char *get_filename_ext(const char *file_name) {
     return dot + 1;
 }
 
-struct Logger generic_get_logger(char * file_name, void *args) {
+struct Logger get_logger(char * file_name, void *args) {
     struct Logger logger;
 
     logger.file_name = file_name;
@@ -36,11 +36,11 @@ struct Logger generic_get_logger(char * file_name, void *args) {
     return logger;
 }
 
-void generic_on_message_received(struct Logger * logger, struct Message *can_msg){
+void on_message_received(struct Logger * logger, struct Message *can_msg){
     logger->methods.on_message_received(logger->writer, can_msg);
 }
 
-void generic_stop_logger(struct Logger * logger){
+void stop_logger(struct Logger * logger){
     logger->methods.stop_logger(logger->writer);
 }
 

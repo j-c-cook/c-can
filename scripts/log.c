@@ -4,7 +4,7 @@
 
 
 int main() {
-    struct Logger logger = generic_get_logger("file.blf", NULL);
+    struct Logger logger = create_logger("file.blf", NULL);
 
     int s = create_socket();
     bind_socket(s, "can0");
@@ -15,14 +15,14 @@ int main() {
         struct Message * msg = capture_message(s);
 
         if (msg != NULL)
-            generic_on_message_received(&logger, msg);
+            on_message_received(&logger, msg);
 
         free_message(msg);
 
         count += 1;
     }
 
-    generic_stop_logger(&logger);
+    stop_logger(&logger);
 
     return 0;
 }

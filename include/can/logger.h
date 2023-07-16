@@ -19,9 +19,9 @@ struct Logger {
     struct Logger_vtable methods;
 };
 
-struct Logger generic_get_logger(char * file_name, void *args);
-void generic_on_message_received(struct Logger * logger, struct Message *can_msg);
-void generic_stop_logger(struct Logger * logger);
+struct Logger create_logger(char * file_name, void *args);
+void on_message_received(struct Logger * logger, struct Message *can_msg);
+void stop_logger(struct Logger * logger);
 
 struct RotatingLogger {
     // Size
