@@ -18,17 +18,9 @@ add_library(c_can SHARED src/bus.c src/message.c src/io/blf.c src/logger.c)
 
 set_target_properties(c_can PROPERTIES VERSION ${VER_STRING} SOVERSION ${VER_STRING})
 
-# Math library is required
+# math and zlib libraries are required
 find_library(MATH_LIBRARY m REQUIRED)
-if(MATH_LIBRARY)
-    target_link_libraries(c_can PUBLIC ${MATH_LIBRARY})
-endif()
-
-# zlib is required
 find_library(ZLIB_LIBRARY z REQUIRED)
-if(ZLIB_LIBRARY)
-    target_link_libraries(c_can PUBLIC ${ZLIB_LIBRARY})
-endif()
 
 # Scripts
 add_executable(lcandump scripts/candump.c)

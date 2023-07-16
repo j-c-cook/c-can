@@ -12,21 +12,23 @@ const char *get_filename_ext(const char *file_name) {
 struct Logger generic_get_logger(char * file_name) {
     struct Logger logger;
 
+    logger.file_name = file_name;
+
     // Set the virtual functions
     const char * b = get_filename_ext(file_name);
-    if (strcmp(b, "io") == 0) {
-        logger.methods._create_logger = &blf_create_logger;
+    if (strcmp(b, "blf") == 0) {
+        logger.methods.create_logger = &blf_create_logger;
         logger.methods.on_message_received = &blf_on_message_received;
         logger.methods.stop_logger = &blf_stop_logger;
     } else {
-        logger.methods._create_logger = NULL;
+        logger.methods.create_logger = NULL;
         logger.methods.on_message_received = NULL;
         logger.methods.stop_logger = NULL;
     }
 
     // Initialize the writer
-    if (logger.methods._create_logger != NULL) {
-        logger.writer = logger.methods._create_logger(file_name);
+    if (logger.methods.create_logger != NULL) {
+        logger.methods.create_logger(file_name);
     } else {
         logger.writer = NULL;
     }

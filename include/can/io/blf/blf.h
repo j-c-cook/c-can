@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "can/message.h"
+#include <can/message.h>
 #include <string.h>
 #include <zlib.h>
 
@@ -34,9 +34,6 @@
 void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]);
 
 struct BLFWriter {
-    char * file_name;
-    FILE * file;
-    uint16_t channel;
     uint16_t compression_level;
     uint8_t buffer[MAX_CONTAINER_SIZE];
     uint32_t buffer_size;
@@ -46,15 +43,9 @@ struct BLFWriter {
     uint32_t object_count;
 };
 
-void * blf_create_logger(char * file_name);
-void blf_on_message_received(void *,struct Message * can_msg);
+void blf_create_logger(void * logger_ptr);
+void blf_on_message_received(void *, struct Message * can_msg);
 void blf_rollover(void * logger, uint64_t filesize, const char * new_filename);
 void blf_stop_logger(void * logger);
-
-
-struct BLFWriter * create_logger(char * file_name);
-void on_message_received(struct BLFWriter *,struct Message * can_msg);
-void rollover(struct BLFWriter * logger, uint64_t filesize, const char * new_filename);
-void stop_logger(struct BLFWriter * logger);
 
 #endif //LINUX_CAN_BLF_H

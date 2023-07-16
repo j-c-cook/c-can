@@ -16,7 +16,7 @@ int main() {
     sigaction(SIGHUP, &action, NULL);
 
     struct RotatingLogger * r_logger = create_rotating_logger(
-            "can0", "file.io", 1000000, 300, Z_BEST_COMPRESSION);
+            "can0", "file.blf", 1000000, 300, Z_BEST_COMPRESSION);
 
     while (!done) {
         log_msg(r_logger);

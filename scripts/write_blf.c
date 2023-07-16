@@ -2,7 +2,7 @@
 #include <can/message.h>
 
 int main() {
-    struct BLFWriter * logger = blf_create_logger("file.io");
+    struct BLFWriter * logger = blf_create_logger("file.blf");
 
     struct Message msg;
     msg.timestamp = (double)1685225282.8679;

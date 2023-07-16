@@ -10,9 +10,11 @@
  */
 
 #include <can/io/blf/blf.h>
-#include <can/io/blf/blf_containers.h>
 #include <time.h>
 #include <math.h>
+
+#include <can/io/blf/blf_containers.h>
+#include <can/logger.h>
 
 void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]) {
     if (timestamp == 0.0 || timestamp < 631152000) {
@@ -43,7 +45,7 @@ void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]) {
     } // fi
 }
 
-void _write_header(struct BLFWriter * logger, uint64_t filesize) {
+void _write_header(struct BLFWriter * blf_writer, FILE * file, uint64_t filesize) {
     struct Header header;
 
     header.signature[0] = 'L';
@@ -63,40 +65,40 @@ void _write_header(struct BLFWriter * logger, uint64_t filesize) {
     header.info[7] = BIN_LOG_PATCH;
 
     header.file_size = filesize;
-    header.uncompressed_size = logger->uncompressed_size;
+    header.uncompressed_size = blf_writer->uncompressed_size;
 
-    header.object_count = logger->object_count;
+    header.object_count = blf_writer->object_count;
     header.count_of_objects_read = 0;
 
-    timestamp_to_systemtime(logger->start_timestamp, header.start_timestamp);
-    timestamp_to_systemtime(logger->stop_timestamp, header.stop_timestamp);
+    timestamp_to_systemtime(blf_writer->start_timestamp, header.start_timestamp);
+    timestamp_to_systemtime(blf_writer->stop_timestamp, header.stop_timestamp);
 
-    fwrite(&header, sizeof(struct Header), 1, logger->file);
+    fwrite(&header, sizeof(struct Header), 1, file);
 
     uint16_t pad_size = (FILE_HEADER_SIZE - sizeof (header)) / 8;
     uint8_t padding[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
     for (int i=0; i<pad_size; i++)
-        fwrite(&padding, sizeof (uint8_t), 8, logger->file);
+        fwrite(&padding, sizeof (uint8_t), 8, file);
 }
 
-void _flush(struct BLFWriter * logger) {
+void _flush(struct BLFWriter * blf_writer, FILE * file) {
     ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
     ssize_t log_container_size = sizeof (struct Log_Container);
 
     uint8_t data[MAX_CONTAINER_SIZE];
     uint16_t compression_method;
-    if (logger->compression_level == Z_NO_COMPRESSION) {
-        memcpy(data, logger->buffer, logger->buffer_size);
+    if (blf_writer->compression_level == Z_NO_COMPRESSION) {
+        memcpy(data, blf_writer->buffer, blf_writer->buffer_size);
         compression_method = Z_NO_COMPRESSION;
     } else {
         compress2(data,
-                  (uLongf *) &logger->buffer_size,
-                  (const Bytef *) logger->buffer,
-                  logger->buffer_size,
-                  logger->compression_level);
+                  (uLongf *) &blf_writer->buffer_size,
+                  (const Bytef *) blf_writer->buffer,
+                  blf_writer->buffer_size,
+                  blf_writer->compression_level);
         compression_method = ZLIB_DEFLATE;
     }
-    ssize_t data_size = logger->buffer_size;
+    ssize_t data_size = blf_writer->buffer_size;
     ssize_t obj_size = obj_header_size + log_container_size + data_size;
 
     struct Obj_Header_Base base_header;
@@ -108,7 +110,7 @@ void _flush(struct BLFWriter * logger) {
     base_header.header_version = 1;
     base_header.object_size = obj_size;
     base_header.object_type = BLF_LOG_CONTAINER;
-    fwrite(&base_header, obj_header_size, 1, logger->file);
+    fwrite(&base_header, obj_header_size, 1, file);
 
     struct Log_Container container_header;
     container_header.compression_method = compression_method;
@@ -117,32 +119,32 @@ void _flush(struct BLFWriter * logger) {
     container_header.size_uncompressed = data_size;
     for (int i=0; i<LC_GAP1; i++)
         container_header.gap_1[i] = 0x0;
-    fwrite(&container_header, log_container_size, 1, logger->file);
+    fwrite(&container_header, log_container_size, 1, file);
 
-    fwrite(data, sizeof (uint8_t), logger->buffer_size, logger->file);
+    fwrite(data, sizeof (uint8_t), blf_writer->buffer_size, file);
 
     // Write padding bytes
     uint8_t gap = 0x0;
     for (int i=0; i<obj_size%4; i++)
-        fwrite(&gap, sizeof (uint8_t), 1, logger->file);
+        fwrite(&gap, sizeof (uint8_t), 1, file);
 
-    logger->uncompressed_size += obj_size;
-    logger->buffer_size = 0;
+    blf_writer->uncompressed_size += obj_size;
+    blf_writer->buffer_size = 0;
 }
 
-void _add_object(struct BLFWriter * logger, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
+void _add_object(struct BLFWriter * blf_writer, FILE * file, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
     ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
     ssize_t obj_header_v1_size = sizeof (struct Obj_Header_v1_Base);
     ssize_t obj_size = obj_header_size + obj_header_v1_size + data_size;
 
-    if (obj_size + logger->buffer_size > MAX_CONTAINER_SIZE) {
-        _flush(logger);
+    if (obj_size + blf_writer->buffer_size > MAX_CONTAINER_SIZE) {
+        _flush(blf_writer, file);
     }
 
-    if (logger->start_timestamp == 0.0)
-        logger->start_timestamp = timestamp;
-    logger->stop_timestamp = timestamp;
-    timestamp = (timestamp - logger->start_timestamp) * 1e9;
+    if (blf_writer->start_timestamp == 0.0)
+        blf_writer->start_timestamp = timestamp;
+    blf_writer->stop_timestamp = timestamp;
+    timestamp = (timestamp - blf_writer->start_timestamp) * 1e9;
 
     struct Obj_Header_Base base_header;
     base_header.signature[0] = 'L';
@@ -154,8 +156,8 @@ void _add_object(struct BLFWriter * logger, uint32_t obj_type, uint8_t data[], s
     base_header.object_size = obj_size;
     base_header.object_type = obj_type;
 
-    memcpy(&logger->buffer[logger->buffer_size], &base_header, sizeof (base_header));
-    logger->buffer_size += sizeof(base_header);
+    memcpy(&blf_writer->buffer[blf_writer->buffer_size], &base_header, sizeof (base_header));
+    blf_writer->buffer_size += sizeof(base_header);
 
     struct Obj_Header_v1_Base obj_header;
     obj_header.flags = TIME_ONE_NANS;
@@ -166,35 +168,36 @@ void _add_object(struct BLFWriter * logger, uint32_t obj_type, uint8_t data[], s
     else
         obj_header.timestamp = (uint64_t)0;
 
-    memcpy(&logger->buffer[logger->buffer_size], &obj_header, sizeof (obj_header));
-    logger->buffer_size += sizeof (obj_header);
+    memcpy(&blf_writer->buffer[blf_writer->buffer_size], &obj_header, sizeof (obj_header));
+    blf_writer->buffer_size += sizeof (obj_header);
 
-    memcpy(&logger->buffer[logger->buffer_size], data, data_size);
-    logger->buffer_size += data_size;
+    memcpy(&blf_writer->buffer[blf_writer->buffer_size], data, data_size);
+    blf_writer->buffer_size += data_size;
 
-    logger->object_count += 1;
+    blf_writer->object_count += 1;
 }
 
-void * blf_create_logger(char * file_name) {
-    struct BLFWriter * logger = malloc(sizeof (struct BLFWriter));
+void blf_create_logger(void * logger_ptr) {
+    struct Logger * logger = (struct Logger *)logger_ptr;
 
-    logger->file_name = file_name;
     logger->file = fopen(logger->file_name, "wb");
     logger->channel = 1;
-    logger->compression_level = 0;
-    logger->buffer_size = 0;
-    logger->start_timestamp = 0.0;
-    logger->stop_timestamp = 0.0;
 
-    logger->uncompressed_size = FILE_HEADER_SIZE;
-    logger->object_count = 0;
+    logger->writer = malloc(sizeof(struct BLFWriter));
+    struct BLFWriter * blf_writer = (struct BLFWriter*)logger->writer;
 
-    _write_header(logger, FILE_HEADER_SIZE);
+    blf_writer->compression_level = 0;
+    blf_writer->buffer_size = 0;
+    blf_writer->start_timestamp = 0.0;
+    blf_writer->stop_timestamp = 0.0;
 
-    return logger;
+    blf_writer->uncompressed_size = FILE_HEADER_SIZE;
+    blf_writer->object_count = 0;
+
+    _write_header(blf_writer, logger->file, FILE_HEADER_SIZE);
 }
 
-void blf_on_message_received(void * logger, struct Message * can_msg) {
+void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
     struct CANMessage blf_message;
     blf_message.channel = 1;
     blf_message.arbitration_id = can_msg->arbitration_id;
@@ -208,81 +211,23 @@ void blf_on_message_received(void * logger, struct Message * can_msg) {
     uint8_t can_msg_buffer[sizeof (struct CANMessage)];
     memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
 
-    _add_object(logger, BLF_CAN_MESSAGE, can_msg_buffer, sizeof (struct CANMessage), can_msg->timestamp);
+    struct Logger * logger = (struct Logger *)logger_ptr;
+    _add_object(
+            logger->writer,
+            logger->file,
+            BLF_CAN_MESSAGE,
+            can_msg_buffer,
+            sizeof (struct CANMessage),
+            can_msg->timestamp);
 }
 
-void blf_rollover(void * logger, const uint64_t filesize, const char * new_filename) {
-    _flush(logger);
+void blf_rollover(void * logger_ptr, const uint64_t filesize, const char * new_filename) {
+    struct Logger * logger = (struct Logger *)logger_ptr;
 
-    struct BLFWriter *blf_logger = (struct BLFWriter*)logger;
-
-    fseek(blf_logger->file, 0, SEEK_SET);
-    _write_header(logger, filesize);
-
-    fclose(blf_logger->file);
-
-    const char * src = blf_logger->file_name;
-    const char * dest = new_filename;
-    rename(src, dest);
-
-    free(logger);
-    logger = create_logger((char *)src);
-}
-
-void blf_stop_logger(void * logger) {
-    _flush(logger);
-
-    struct BLFWriter *blf_logger = (struct BLFWriter*)logger;
-
-    uint64_t filesize = ftell(blf_logger->file);
-    fseek(blf_logger->file, 0, SEEK_SET);
-    _write_header(logger, filesize);
-
-    fclose(blf_logger->file);
-    free(logger);
-}
-
-struct BLFWriter * create_logger(char * file_name) {
-    struct BLFWriter * logger = malloc(sizeof (struct BLFWriter));
-
-    logger->file_name = file_name;
-    logger->file = fopen(logger->file_name, "wb");
-    logger->channel = 1;
-    logger->compression_level = 0;
-    logger->buffer_size = 0;
-    logger->start_timestamp = 0.0;
-    logger->stop_timestamp = 0.0;
-
-    logger->uncompressed_size = FILE_HEADER_SIZE;
-    logger->object_count = 0;
-
-    _write_header(logger, FILE_HEADER_SIZE);
-
-    return logger;
-}
-
-void on_message_received(struct BLFWriter * logger, struct Message * can_msg) {
-    struct CANMessage blf_message;
-    blf_message.channel = 1;
-    blf_message.arbitration_id = can_msg->arbitration_id;
-    if (can_msg->is_extended_id)
-        blf_message.arbitration_id |= CAN_MSG_EXT;
-    blf_message.flags = 0;
-    blf_message.dlc = can_msg->dlc;
-    for (int i=0; i<CAN_MAX_DLEN; i++)
-        blf_message.data[i] = can_msg->data[i];
-
-    uint8_t can_msg_buffer[sizeof (struct CANMessage)];
-    memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
-
-    _add_object(logger, BLF_CAN_MESSAGE, can_msg_buffer, sizeof (struct CANMessage), can_msg->timestamp);
-}
-
-void rollover(struct BLFWriter * logger, const uint64_t filesize, const char * new_filename) {
-    _flush(logger);
+    _flush(logger->writer, logger->file);
 
     fseek(logger->file, 0, SEEK_SET);
-    _write_header(logger, filesize);
+    _write_header(logger->writer, logger->file, filesize);
 
     fclose(logger->file);
 
@@ -290,17 +235,19 @@ void rollover(struct BLFWriter * logger, const uint64_t filesize, const char * n
     const char * dest = new_filename;
     rename(src, dest);
 
-    free(logger);
-    logger = create_logger((char *)src);
+    free(logger->writer);
+    blf_create_logger(logger);
 }
 
-void stop_logger(struct BLFWriter * logger) {
-    _flush(logger);
+void blf_stop_logger(void * logger_ptr) {
+    struct Logger * logger = (struct Logger *)logger_ptr;
+
+    _flush(logger->writer, logger->file);
 
     uint64_t filesize = ftell(logger->file);
     fseek(logger->file, 0, SEEK_SET);
-    _write_header(logger, filesize);
+    _write_header(logger->writer, logger->file, filesize);
 
     fclose(logger->file);
-    free(logger);
+    free(logger->writer);
 }

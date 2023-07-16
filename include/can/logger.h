@@ -5,12 +5,16 @@
 #include <can/io/blf/blf.h>
 
 struct Logger_vtable {
-    void *(*_create_logger)(char * file_name);
+    void (*create_logger)(void *);
     void (*on_message_received)(void *, struct Message *);
     void (*stop_logger)(void *);
 };
 
 struct Logger {
+    char * file_name;
+    FILE * file;
+    uint16_t channel;
+
     void * writer;
     struct Logger_vtable methods;
 };
