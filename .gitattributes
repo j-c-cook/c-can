@@ -1,0 +1,17 @@
+# Declare files that will always have CRLF line endings.
+*.cpp text eol=crlf
+*.hpp text eol=crlf
+*.c text eol=crlf
+*.h text eol=crlf
+*.md text eol=crlf
+*.yml text eol=crlf
+*.txt text eol=crlf
+*.dox text eol=crlf
+*.tpp text eol=crlf
+docs/Doxyfile text eol=crlf
+*.html text eol=crlf
+sdkconfig text eol=crlf
+*.dbc text eol=crlf
+
+# Declare files that will always have
+*.sh text eol=lf
