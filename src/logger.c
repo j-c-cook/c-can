@@ -2,6 +2,46 @@
 #include <can/bus.h>
 #include <time.h>
 
+const char *get_filename_ext(const char *file_name) {
+    // https://stackoverflow.com/a/5309508
+    const char *dot = strrchr(file_name, '.');
+    if(!dot || dot == file_name) return "";
+    return dot + 1;
+}
+
+struct Logger generic_get_logger(char * file_name) {
+    struct Logger logger;
+
+    // Set the virtual functions
+    const char * b = get_filename_ext(file_name);
+    if (strcmp(b, "io") == 0) {
+        logger.methods._create_logger = &blf_create_logger;
+        logger.methods.on_message_received = &blf_on_message_received;
+        logger.methods.stop_logger = &blf_stop_logger;
+    } else {
+        logger.methods._create_logger = NULL;
+        logger.methods.on_message_received = NULL;
+        logger.methods.stop_logger = NULL;
+    }
+
+    // Initialize the writer
+    if (logger.methods._create_logger != NULL) {
+        logger.writer = logger.methods._create_logger(file_name);
+    } else {
+        logger.writer = NULL;
+    }
+
+    return logger;
+}
+
+void generic_on_message_received(struct Logger * logger, struct Message *can_msg){
+    logger->methods.on_message_received(logger->writer, can_msg);
+}
+
+void generic_stop_logger(struct Logger * logger){
+    logger->methods.stop_logger(logger->writer);
+}
+
 struct RotatingLogger * create_rotating_logger(
         char * channel,
         char * file_name,
@@ -38,7 +78,7 @@ void _default_filename(char * f_name, size_t max_len, const double timestamp, co
 
     const uint8_t f_end_len = 10;
     char f_end[f_end_len];
-    snprintf (f_end, f_end_len, "_%04d.blf", rollover_count);
+    snprintf (f_end, f_end_len, "_%04d.io", rollover_count);
 
     const uint8_t f_start_len = 8;
     char f_start[f_start_len];

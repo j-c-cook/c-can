@@ -9,7 +9,8 @@
  *
  */
 
-#include <can/io/blf.h>
+#include <can/io/blf/blf.h>
+#include <can/io/blf/blf_containers.h>
 #include <time.h>
 #include <math.h>
 
@@ -40,25 +41,6 @@ void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]) {
         systemtime[6] = ptr_time.tm_sec;
         systemtime[7] = (uint16_t)ceil((timestamp - floor(timestamp)) * 1e3);
     } // fi
-}
-
-struct BLFWriter * create_logger(char * file_name) {
-    struct BLFWriter * logger = malloc(sizeof (struct BLFWriter));
-
-    logger->file_name = file_name;
-    logger->file = fopen(logger->file_name, "wb");
-    logger->channel = 1;
-    logger->compression_level = 0;
-    logger->buffer_size = 0;
-    logger->start_timestamp = 0.0;
-    logger->stop_timestamp = 0.0;
-
-    logger->uncompressed_size = FILE_HEADER_SIZE;
-    logger->object_count = 0;
-
-    _write_header(logger, FILE_HEADER_SIZE);
-
-    return logger;
 }
 
 void _write_header(struct BLFWriter * logger, uint64_t filesize) {
@@ -95,68 +77,6 @@ void _write_header(struct BLFWriter * logger, uint64_t filesize) {
     uint8_t padding[8] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
     for (int i=0; i<pad_size; i++)
         fwrite(&padding, sizeof (uint8_t), 8, logger->file);
-}
-
-void on_message_received(struct BLFWriter * logger, struct Message * can_msg) {
-    struct CANMessage blf_message;
-    blf_message.channel = 1;
-    blf_message.arbitration_id = can_msg->arbitration_id;
-    if (can_msg->is_extended_id)
-        blf_message.arbitration_id |= CAN_MSG_EXT;
-    blf_message.flags = 0;
-    blf_message.dlc = can_msg->dlc;
-    for (int i=0; i<CAN_MAX_DLEN; i++)
-        blf_message.data[i] = can_msg->data[i];
-
-    uint8_t can_msg_buffer[sizeof (struct CANMessage)];
-    memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
-
-    _add_object(logger, BLF_CAN_MESSAGE, can_msg_buffer, sizeof (struct CANMessage), can_msg->timestamp);
-}
-
-void _add_object(struct BLFWriter * logger, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
-    ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
-    ssize_t obj_header_v1_size = sizeof (struct Obj_Header_v1_Base);
-    ssize_t obj_size = obj_header_size + obj_header_v1_size + data_size;
-
-    if (obj_size + logger->buffer_size > MAX_CONTAINER_SIZE) {
-        _flush(logger);
-    }
-
-    if (logger->start_timestamp == 0.0)
-        logger->start_timestamp = timestamp;
-    logger->stop_timestamp = timestamp;
-    timestamp = (timestamp - logger->start_timestamp) * 1e9;
-
-    struct Obj_Header_Base base_header;
-    base_header.signature[0] = 'L';
-    base_header.signature[1] = 'O';
-    base_header.signature[2] = 'B';
-    base_header.signature[3] = 'J';
-    base_header.header_size = obj_header_size + obj_header_v1_size;
-    base_header.header_version = 1;
-    base_header.object_size = obj_size;
-    base_header.object_type = obj_type;
-
-    memcpy(&logger->buffer[logger->buffer_size], &base_header, sizeof (base_header));
-    logger->buffer_size += sizeof(base_header);
-
-    struct Obj_Header_v1_Base obj_header;
-    obj_header.flags = TIME_ONE_NANS;
-    obj_header.client_index = 0;
-    obj_header.object_version = 0;
-    if (timestamp > 0)
-        obj_header.timestamp = (uint64_t)timestamp; // max(timestamp, 0)
-    else
-        obj_header.timestamp = (uint64_t)0;
-
-    memcpy(&logger->buffer[logger->buffer_size], &obj_header, sizeof (obj_header));
-    logger->buffer_size += sizeof (obj_header);
-
-    memcpy(&logger->buffer[logger->buffer_size], data, data_size);
-    logger->buffer_size += data_size;
-
-    logger->object_count += 1;
 }
 
 void _flush(struct BLFWriter * logger) {
@@ -208,6 +128,154 @@ void _flush(struct BLFWriter * logger) {
 
     logger->uncompressed_size += obj_size;
     logger->buffer_size = 0;
+}
+
+void _add_object(struct BLFWriter * logger, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
+    ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
+    ssize_t obj_header_v1_size = sizeof (struct Obj_Header_v1_Base);
+    ssize_t obj_size = obj_header_size + obj_header_v1_size + data_size;
+
+    if (obj_size + logger->buffer_size > MAX_CONTAINER_SIZE) {
+        _flush(logger);
+    }
+
+    if (logger->start_timestamp == 0.0)
+        logger->start_timestamp = timestamp;
+    logger->stop_timestamp = timestamp;
+    timestamp = (timestamp - logger->start_timestamp) * 1e9;
+
+    struct Obj_Header_Base base_header;
+    base_header.signature[0] = 'L';
+    base_header.signature[1] = 'O';
+    base_header.signature[2] = 'B';
+    base_header.signature[3] = 'J';
+    base_header.header_size = obj_header_size + obj_header_v1_size;
+    base_header.header_version = 1;
+    base_header.object_size = obj_size;
+    base_header.object_type = obj_type;
+
+    memcpy(&logger->buffer[logger->buffer_size], &base_header, sizeof (base_header));
+    logger->buffer_size += sizeof(base_header);
+
+    struct Obj_Header_v1_Base obj_header;
+    obj_header.flags = TIME_ONE_NANS;
+    obj_header.client_index = 0;
+    obj_header.object_version = 0;
+    if (timestamp > 0)
+        obj_header.timestamp = (uint64_t)timestamp; // max(timestamp, 0)
+    else
+        obj_header.timestamp = (uint64_t)0;
+
+    memcpy(&logger->buffer[logger->buffer_size], &obj_header, sizeof (obj_header));
+    logger->buffer_size += sizeof (obj_header);
+
+    memcpy(&logger->buffer[logger->buffer_size], data, data_size);
+    logger->buffer_size += data_size;
+
+    logger->object_count += 1;
+}
+
+void * blf_create_logger(char * file_name) {
+    struct BLFWriter * logger = malloc(sizeof (struct BLFWriter));
+
+    logger->file_name = file_name;
+    logger->file = fopen(logger->file_name, "wb");
+    logger->channel = 1;
+    logger->compression_level = 0;
+    logger->buffer_size = 0;
+    logger->start_timestamp = 0.0;
+    logger->stop_timestamp = 0.0;
+
+    logger->uncompressed_size = FILE_HEADER_SIZE;
+    logger->object_count = 0;
+
+    _write_header(logger, FILE_HEADER_SIZE);
+
+    return logger;
+}
+
+void blf_on_message_received(void * logger, struct Message * can_msg) {
+    struct CANMessage blf_message;
+    blf_message.channel = 1;
+    blf_message.arbitration_id = can_msg->arbitration_id;
+    if (can_msg->is_extended_id)
+        blf_message.arbitration_id |= CAN_MSG_EXT;
+    blf_message.flags = 0;
+    blf_message.dlc = can_msg->dlc;
+    for (int i=0; i<CAN_MAX_DLEN; i++)
+        blf_message.data[i] = can_msg->data[i];
+
+    uint8_t can_msg_buffer[sizeof (struct CANMessage)];
+    memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
+
+    _add_object(logger, BLF_CAN_MESSAGE, can_msg_buffer, sizeof (struct CANMessage), can_msg->timestamp);
+}
+
+void blf_rollover(void * logger, const uint64_t filesize, const char * new_filename) {
+    _flush(logger);
+
+    struct BLFWriter *blf_logger = (struct BLFWriter*)logger;
+
+    fseek(blf_logger->file, 0, SEEK_SET);
+    _write_header(logger, filesize);
+
+    fclose(blf_logger->file);
+
+    const char * src = blf_logger->file_name;
+    const char * dest = new_filename;
+    rename(src, dest);
+
+    free(logger);
+    logger = create_logger((char *)src);
+}
+
+void blf_stop_logger(void * logger) {
+    _flush(logger);
+
+    struct BLFWriter *blf_logger = (struct BLFWriter*)logger;
+
+    uint64_t filesize = ftell(blf_logger->file);
+    fseek(blf_logger->file, 0, SEEK_SET);
+    _write_header(logger, filesize);
+
+    fclose(blf_logger->file);
+    free(logger);
+}
+
+struct BLFWriter * create_logger(char * file_name) {
+    struct BLFWriter * logger = malloc(sizeof (struct BLFWriter));
+
+    logger->file_name = file_name;
+    logger->file = fopen(logger->file_name, "wb");
+    logger->channel = 1;
+    logger->compression_level = 0;
+    logger->buffer_size = 0;
+    logger->start_timestamp = 0.0;
+    logger->stop_timestamp = 0.0;
+
+    logger->uncompressed_size = FILE_HEADER_SIZE;
+    logger->object_count = 0;
+
+    _write_header(logger, FILE_HEADER_SIZE);
+
+    return logger;
+}
+
+void on_message_received(struct BLFWriter * logger, struct Message * can_msg) {
+    struct CANMessage blf_message;
+    blf_message.channel = 1;
+    blf_message.arbitration_id = can_msg->arbitration_id;
+    if (can_msg->is_extended_id)
+        blf_message.arbitration_id |= CAN_MSG_EXT;
+    blf_message.flags = 0;
+    blf_message.dlc = can_msg->dlc;
+    for (int i=0; i<CAN_MAX_DLEN; i++)
+        blf_message.data[i] = can_msg->data[i];
+
+    uint8_t can_msg_buffer[sizeof (struct CANMessage)];
+    memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
+
+    _add_object(logger, BLF_CAN_MESSAGE, can_msg_buffer, sizeof (struct CANMessage), can_msg->timestamp);
 }
 
 void rollover(struct BLFWriter * logger, const uint64_t filesize, const char * new_filename) {

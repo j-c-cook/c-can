@@ -14,7 +14,7 @@ project(c_can
         LANGUAGES C)
 
 include_directories(include)
-add_library(c_can SHARED src/bus.c src/message.c src/blf.c src/logger.c)
+add_library(c_can SHARED src/bus.c src/message.c src/io/blf.c src/logger.c)
 
 set_target_properties(c_can PROPERTIES VERSION ${VER_STRING} SOVERSION ${VER_STRING})
 

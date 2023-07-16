@@ -1,6 +1,6 @@
 #include <can/bus.h>
 #include <can/message.h>
-#include <can/io/blf.h>
+#include <can/io/blf/blf.h>
 #include <signal.h>
 
 volatile sig_atomic_t done = 0;

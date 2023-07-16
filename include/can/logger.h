@@ -2,7 +2,22 @@
 #define LINUX_CAN_LOGGER_H
 
 #include <stdint.h>
-#include <can/io/blf.h>
+#include <can/io/blf/blf.h>
+
+struct Logger_vtable {
+    void *(*_create_logger)(char * file_name);
+    void (*on_message_received)(void *, struct Message *);
+    void (*stop_logger)(void *);
+};
+
+struct Logger {
+    void * writer;
+    struct Logger_vtable methods;
+};
+
+struct Logger generic_get_logger(char * file_name);
+void generic_on_message_received(struct Logger * logger, struct Message *can_msg);
+void generic_stop_logger(struct Logger * logger);
 
 struct RotatingLogger {
     // Size

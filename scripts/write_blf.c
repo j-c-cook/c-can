@@ -1,8 +1,8 @@
-#include "can/io/blf.h"
+#include <can/io/blf/blf.h>
 #include <can/message.h>
 
 int main() {
-    struct BLFWriter * logger = create_logger();
+    struct BLFWriter * logger = blf_create_logger("file.io");
 
     struct Message msg;
     msg.timestamp = (double)1685225282.8679;
