@@ -9,10 +9,13 @@ const char *get_filename_ext(const char *file_name) {
     return dot + 1;
 }
 
-struct Logger get_logger(char * file_name, void *args) {
+struct Logger create_logger(char * file_name, char * channel, void *args) {
     struct Logger logger;
 
     logger.file_name = file_name;
+    logger.channel = channel;
+    logger.s = create_socket();
+    bind_socket(logger.s, logger.channel);
 
     // Set the virtual functions
     const char * b = get_filename_ext(file_name);
@@ -42,6 +45,7 @@ void on_message_received(struct Logger * logger, struct Message *can_msg){
 
 void stop_logger(struct Logger * logger){
     logger->methods.stop_logger(logger->writer);
+    close_socket(logger->s);
 }
 
 struct RotatingLogger * create_rotating_logger(
@@ -49,7 +53,7 @@ struct RotatingLogger * create_rotating_logger(
         char * file_name,
         uint64_t max_bytes,
         uint64_t delta_t,
-        uint8_t compression_level) {
+        void * args) {
     struct RotatingLogger * r_logger = malloc(sizeof (struct RotatingLogger));
     r_logger->max_bytes = max_bytes;
     r_logger->delta_t = delta_t;
@@ -57,22 +61,17 @@ struct RotatingLogger * create_rotating_logger(
 
     r_logger->rollover_count = 0;
 
-    r_logger->logger = create_logger(file_name);
-    r_logger->s = create_socket();
-    r_logger->channel = channel;
+    r_logger->logger = create_logger(file_name, channel, args);
 
-    r_logger->compression_level = compression_level;
-
-    bind_socket(r_logger->s, r_logger->channel);
+    r_logger->methods.rollover = &blf_rollover;
 
     return r_logger;
 }
 
-void _default_filename(char * f_name, size_t max_len, const double timestamp, const uint32_t rollover_count, const char * channel) {
-    // TODO: Change to Greenwich time
-    time_t rawtime = (time_t)timestamp;
+void default_filename_(char * f_name, size_t max_len, const uint32_t rollover_count, const char * channel) {
+    time_t timestamp = time(NULL); // seconds since January 1, 1970
     struct tm ptr_time;
-    (void) gmtime_r(&rawtime, &ptr_time);
+    (void) gmtime_r(&timestamp, &ptr_time);
 
     const uint8_t f_time_len = 20;
     char f_time[f_time_len];
@@ -90,7 +89,7 @@ void _default_filename(char * f_name, size_t max_len, const double timestamp, co
 }
 
 void log_msg(struct RotatingLogger * r_logger) {
-    struct Message * msg = capture_message(r_logger->s);
+    struct Message * msg = capture_message(r_logger->logger.s);
 
     if (msg == NULL) {
         free(msg);
@@ -101,20 +100,20 @@ void log_msg(struct RotatingLogger * r_logger) {
         r_logger->last_rollover_time = msg->timestamp;
 
     // Check size and time limit
-    const uint64_t filesize = ftell(r_logger->logger->file);
+    const uint64_t filesize = ftell(r_logger->logger.file);
     bool file_over_size = filesize > r_logger->max_bytes;
     bool file_passed_time = (msg->timestamp - r_logger->last_rollover_time) > (double)r_logger->delta_t;
     if (file_over_size || file_passed_time) {
         const uint8_t f_name_len = 80;
         char f_name[f_name_len];
-        _default_filename(f_name, f_name_len, msg->timestamp, r_logger->rollover_count, r_logger->channel);
+        default_filename_(f_name, f_name_len, r_logger->rollover_count, r_logger->logger.channel);
 
-        rollover(r_logger->logger, filesize, f_name);
+        r_logger->methods.rollover(&r_logger->logger, filesize, f_name);
         r_logger->last_rollover_time = msg->timestamp;
         r_logger->rollover_count += 1;
     }
 
-    on_message_received(r_logger->logger, msg);
+    on_message_received(&r_logger->logger, msg);
 
     free(msg);
 }
@@ -122,7 +121,7 @@ void log_msg(struct RotatingLogger * r_logger) {
 void shutdown_rotating(struct RotatingLogger * r_logger) {
     const uint8_t f_name_len = 80;
     char f_name[f_name_len];
-    _default_filename(f_name, f_name_len, r_logger->logger->stop_timestamp, r_logger->rollover_count, r_logger->channel);
-    stop_logger(r_logger->logger);
+    default_filename_(f_name, f_name_len, r_logger->rollover_count, r_logger->logger.channel);
+    r_logger->logger.methods.stop_logger(&r_logger->logger);
     free(r_logger);
 }

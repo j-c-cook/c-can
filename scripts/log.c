@@ -4,15 +4,16 @@
 
 
 int main() {
-    struct Logger logger = create_logger("file.blf", NULL);
+    struct BLFWriterArgs args = {
+            .compression_level = Z_BEST_COMPRESSION,
+    };
 
-    int s = create_socket();
-    bind_socket(s, "can0");
+    struct Logger logger = create_logger("file.blf", "can0", (void*)&args);
 
     int count = 0;
 
     while (count < 100000) {
-        struct Message * msg = capture_message(s);
+        struct Message * msg = capture_message(logger.s);
 
         if (msg != NULL)
             on_message_received(&logger, msg);

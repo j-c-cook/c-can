@@ -15,8 +15,12 @@ int main() {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
+    struct BLFWriterArgs args = {
+            .compression_level = Z_BEST_COMPRESSION,
+    };
+
     struct RotatingLogger * r_logger = create_rotating_logger(
-            "can0", "file.blf", 1000000, 300, Z_BEST_COMPRESSION);
+            "can0", "file.blf", 1000000, 300, (void*)&args);
 
     while (!done) {
         log_msg(r_logger);

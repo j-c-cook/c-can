@@ -45,7 +45,7 @@ void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]) {
     } // fi
 }
 
-void _write_header(struct BLFWriter * blf_writer, FILE * file, uint64_t filesize) {
+void write_header_(struct BLFWriter * blf_writer, FILE * file, uint64_t filesize) {
     struct Header header;
 
     header.signature[0] = 'L';
@@ -81,7 +81,7 @@ void _write_header(struct BLFWriter * blf_writer, FILE * file, uint64_t filesize
         fwrite(&padding, sizeof (uint8_t), 8, file);
 }
 
-void _flush(struct BLFWriter * blf_writer, FILE * file) {
+void flush_(struct BLFWriter * blf_writer, FILE * file) {
     ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
     ssize_t log_container_size = sizeof (struct Log_Container);
 
@@ -132,13 +132,13 @@ void _flush(struct BLFWriter * blf_writer, FILE * file) {
     blf_writer->buffer_size = 0;
 }
 
-void _add_object(struct BLFWriter * blf_writer, FILE * file, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
+void add_object_(struct BLFWriter * blf_writer, FILE * file, uint32_t obj_type, uint8_t data[], ssize_t data_size, double timestamp) {
     ssize_t obj_header_size = sizeof (struct Obj_Header_Base);
     ssize_t obj_header_v1_size = sizeof (struct Obj_Header_v1_Base);
     ssize_t obj_size = obj_header_size + obj_header_v1_size + data_size;
 
     if (obj_size + blf_writer->buffer_size > MAX_CONTAINER_SIZE) {
-        _flush(blf_writer, file);
+        flush_(blf_writer, file);
     }
 
     if (blf_writer->start_timestamp == 0.0)
@@ -179,14 +179,14 @@ void _add_object(struct BLFWriter * blf_writer, FILE * file, uint32_t obj_type, 
 
 void blf_create_logger(void * logger_ptr, void * args) {
     struct Logger * logger = (struct Logger *)logger_ptr;
+    struct BLFWriterArgs * blf_args = (struct BLFWriterArgs*)args;
 
     logger->file = fopen(logger->file_name, "wb");
-    logger->channel = 1;
 
     logger->writer = malloc(sizeof(struct BLFWriter));
     struct BLFWriter * blf_writer = (struct BLFWriter*)logger->writer;
 
-    blf_writer->compression_level = 0;
+    blf_writer->compression_level = blf_args->compression_level;
     blf_writer->buffer_size = 0;
     blf_writer->start_timestamp = 0.0;
     blf_writer->stop_timestamp = 0.0;
@@ -194,7 +194,7 @@ void blf_create_logger(void * logger_ptr, void * args) {
     blf_writer->uncompressed_size = FILE_HEADER_SIZE;
     blf_writer->object_count = 0;
 
-    _write_header(blf_writer, logger->file, FILE_HEADER_SIZE);
+    write_header_(blf_writer, logger->file, FILE_HEADER_SIZE);
 }
 
 void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
@@ -212,7 +212,7 @@ void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
     memcpy(can_msg_buffer, &blf_message, sizeof (struct CANMessage));
 
     struct Logger * logger = (struct Logger *)logger_ptr;
-    _add_object(
+    add_object_(
             logger->writer,
             logger->file,
             BLF_CAN_MESSAGE,
@@ -224,10 +224,10 @@ void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
 void blf_rollover(void * logger_ptr, const uint64_t filesize, const char * new_filename) {
     struct Logger * logger = (struct Logger *)logger_ptr;
 
-    _flush(logger->writer, logger->file);
+    flush_(logger->writer, logger->file);
 
     fseek(logger->file, 0, SEEK_SET);
-    _write_header(logger->writer, logger->file, filesize);
+    write_header_(logger->writer, logger->file, filesize);
 
     fclose(logger->file);
 
@@ -236,17 +236,17 @@ void blf_rollover(void * logger_ptr, const uint64_t filesize, const char * new_f
     rename(src, dest);
 
     free(logger->writer);
-    blf_create_logger(logger);
+    blf_create_logger(logger, logger->file);
 }
 
 void blf_stop_logger(void * logger_ptr) {
     struct Logger * logger = (struct Logger *)logger_ptr;
 
-    _flush(logger->writer, logger->file);
+    flush_(logger->writer, logger->file);
 
     uint64_t filesize = ftell(logger->file);
     fseek(logger->file, 0, SEEK_SET);
-    _write_header(logger->writer, logger->file, filesize);
+    write_header_(logger->writer, logger->file, filesize);
 
     fclose(logger->file);
     free(logger->writer);
