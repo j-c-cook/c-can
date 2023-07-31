@@ -31,7 +31,7 @@ struct Logger create_logger(char * file_name, char * channel, void *args) {
 
     // Initialize the writer
     if (logger.methods.create_logger != NULL) {
-        logger.methods.create_logger(file_name, args);
+        logger.methods.create_logger(&logger, args);
     } else {
         logger.writer = NULL;
     }
@@ -40,11 +40,11 @@ struct Logger create_logger(char * file_name, char * channel, void *args) {
 }
 
 void on_message_received(struct Logger * logger, struct Message *can_msg){
-    logger->methods.on_message_received(logger->writer, can_msg);
+    logger->methods.on_message_received(logger, can_msg);
 }
 
 void stop_logger(struct Logger * logger){
-    logger->methods.stop_logger(logger->writer);
+    logger->methods.stop_logger(logger);
     close_socket(logger->s);
 }
 

@@ -1,8 +1,12 @@
-#include <can/io/blf/blf.h>
+#include <can/logger.h>
 #include <can/message.h>
 
 int main() {
-    struct BLFWriter * logger = blf_create_logger("file.blf");
+    struct BLFWriterArgs args = {
+            .compression_level = 0
+    };
+
+    struct Logger logger = create_logger("file.blf", "vcan0", (void*)&args);
 
     struct Message msg;
     msg.timestamp = (double)1685225282.8679;
@@ -18,13 +22,13 @@ int main() {
     msg.data[7] = 0xf;
     msg.is_extended_id = true;
 
-    on_message_received(logger, &msg);
+    on_message_received(&logger, &msg);
 
     msg.timestamp += 1;
 
-    on_message_received(logger, &msg);
+    on_message_received(&logger, &msg);
 
-    stop_logger(logger);
+    stop_logger(&logger);
 
     return 0;
 }

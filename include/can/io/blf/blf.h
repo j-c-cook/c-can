@@ -49,7 +49,7 @@ struct BLFWriter {
 
 void blf_create_logger(void * logger_ptr, void * args);
 void blf_on_message_received(void *, struct Message * can_msg);
-void blf_rollover(void * logger, uint64_t filesize, const char * new_filename);
-void blf_stop_logger(void * logger);
+void blf_rollover(void * logger_ptr, uint64_t filesize, const char * new_filename);
+void blf_stop_logger(void * logger_ptr);
 
 #endif //LINUX_CAN_BLF_H
