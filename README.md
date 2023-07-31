@@ -1,6 +1,6 @@
 # c-can
 
-A controller area network (CAN) library for written in C.
+A controller area network (CAN) library written in C.
 
 ## Background
 
