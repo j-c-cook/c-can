@@ -16,7 +16,6 @@ project(c_can
 include_directories(include)
 add_library(c_can SHARED src/bus.c src/message.c src/io/blf.c src/logger.c)
 
-set_target_properties(c_can PROPERTIES PUBLIC_HEADER include/can/c_can.h)
 set_target_properties(c_can PROPERTIES VERSION ${VER_STRING} SOVERSION ${VER_STRING})
 
 # Math library is required
@@ -39,17 +38,21 @@ endif()
 # Scripts
 add_executable(lcandump scripts/candump.c)
 target_link_libraries(lcandump PRIVATE c_can)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/lcandump DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(write_blf scripts/write_blf.c)
 target_link_libraries(write_blf PRIVATE c_can)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/write_blf DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(log scripts/log.c)
 target_link_libraries(log PRIVATE c_can)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/log DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(r_logger scripts/r_logger.c)
 target_link_libraries(r_logger PRIVATE c_can)
+set_target_properties(c_can PROPERTIES RUNTIME r_logger)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/r_logger DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 install(TARGETS c_can
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/can
 )
