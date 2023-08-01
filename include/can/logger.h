@@ -18,6 +18,7 @@ struct Logger {
 
     void * writer;
     struct Logger_vtable methods;
+    void * args;
 };
 
 struct Logger create_logger(char * file_name, char * channel, void *args);

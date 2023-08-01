@@ -20,7 +20,7 @@ int main() {
     };
 
     struct RotatingLogger * r_logger = create_rotating_logger(
-            "can0", "file.blf", 1000000, 300, (void*)&args);
+            "can0", "file.blf", 250000, 300, (void*)&args);
 
     while (!done) {
         log_msg(r_logger);

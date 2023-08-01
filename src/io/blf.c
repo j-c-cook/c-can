@@ -236,7 +236,7 @@ void blf_rollover(void * logger_ptr, const uint64_t filesize, const char * new_f
     rename(src, dest);
 
     free(logger->writer);
-    blf_create_logger(logger, logger->file);
+    blf_create_logger(logger, logger->args);
 }
 
 void blf_stop_logger(void * logger_ptr) {

@@ -15,6 +15,7 @@ struct Logger create_logger(char * file_name, char * channel, void *args) {
     logger.file_name = file_name;
     logger.channel = channel;
     logger.s = create_socket();
+    logger.args = args;
     bind_socket(logger.s, logger.channel);
 
     // Set the virtual functions
@@ -31,7 +32,7 @@ struct Logger create_logger(char * file_name, char * channel, void *args) {
 
     // Initialize the writer
     if (logger.methods.create_logger != NULL) {
-        logger.methods.create_logger(&logger, args);
+        logger.methods.create_logger(&logger, logger.args);
     } else {
         logger.writer = NULL;
     }
@@ -79,7 +80,7 @@ void default_filename_(char * f_name, size_t max_len, const uint32_t rollover_co
 
     const uint8_t f_end_len = 10;
     char f_end[f_end_len];
-    snprintf (f_end, f_end_len, "_%04d.io", rollover_count);
+    snprintf (f_end, f_end_len, "_%04d.blf", rollover_count);
 
     const uint8_t f_start_len = 8;
     char f_start[f_start_len];
