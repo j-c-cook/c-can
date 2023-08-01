@@ -1,4 +1,4 @@
-#include <can/logger.h>
+#include <can/c_can.h>
 #include <signal.h>
 
 volatile sig_atomic_t done = 0;
@@ -15,8 +15,12 @@ int main() {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
+    struct BLFWriterArgs args = {
+            .compression_level = 6, // level 6 compression
+    };
+
     struct RotatingLogger * r_logger = create_rotating_logger(
-            "can0", "file.blf", 1000000, 300, Z_BEST_COMPRESSION);
+            "can0", "file.blf", 250000, 300, (void*)&args);
 
     while (!done) {
         log_msg(r_logger);

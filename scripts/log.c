@@ -1,28 +1,27 @@
-#include <can/bus.h>
-#include <can/message.h>
-#include <can/io/blf.h>
+#include <can/c_can.h>
 
 
 int main() {
-    struct BLFWriter * logger = create_logger("file.blf");
+    struct BLFWriterArgs args = {
+            .compression_level = 6,
+    };
 
-    int s = create_socket();
-    bind_socket(s, "can0");
+    struct Logger logger = create_logger("file.blf", "can0", (void*)&args);
 
     int count = 0;
 
     while (count < 100000) {
-        struct Message * msg = capture_message(s);
+        struct Message * msg = capture_message(logger.s);
 
         if (msg != NULL)
-            on_message_received(logger, msg);
+            on_message_received(&logger, msg);
 
         free_message(msg);
 
         count += 1;
     }
 
-    stop_logger(logger);
+    stop_logger(&logger);
 
     return 0;
 }

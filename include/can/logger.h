@@ -2,24 +2,44 @@
 #define LINUX_CAN_LOGGER_H
 
 #include <stdint.h>
-#include <can/io/blf.h>
+#include <can/io/blf/blf.h>
+
+struct Logger_vtable {
+    void (*create_logger)(void *, void*);
+    void (*on_message_received)(void *, struct Message *);
+    void (*stop_logger)(void *);
+};
+
+struct Logger {
+    char * file_name;
+    FILE * file;
+    int s;
+    char * channel;
+
+    void * writer;
+    struct Logger_vtable methods;
+    void * args;
+};
+
+struct Logger create_logger(char * file_name, char * channel, void *args);
+void on_message_received(struct Logger * logger, struct Message *can_msg);
+void stop_logger(struct Logger * logger);
+
+struct RotatingLogger_vtable {
+    void (*rollover)(void *, const uint64_t filesize, const char * new_filename);
+};
 
 struct RotatingLogger {
-    // Size
+    // Size (bytes)
     uint64_t max_bytes;
-    // Time
+    // Time (seconds)
     double last_rollover_time;
     uint64_t delta_t;
 
     uint32_t rollover_count;
 
-    // Logger specific details
-    struct BLFWriter * logger;
-    int s;
-    char * channel;
-
-    // zlib compression information
-    uint8_t compression_level;
+    struct Logger logger;
+    struct RotatingLogger_vtable methods;
 };
 
 struct RotatingLogger * create_rotating_logger(
@@ -27,7 +47,7 @@ struct RotatingLogger * create_rotating_logger(
         char * file_name,
         uint64_t max_bytes,
         uint64_t delta_t,
-        uint8_t compression_level);
+        void * args);
 
 void log_msg(struct RotatingLogger *);
 
