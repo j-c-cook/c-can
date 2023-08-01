@@ -10,7 +10,7 @@ set(VER_STRING ${VER_MAJOR}.${VER_MINOR}.${VER_PATCH})
 project(c_can
         VERSION ${VER_STRING}
         DESCRIPTION "CAN  logging in Linux."
-        HOMEPAGE_URL github.com/AGCO-EFG/linux-can.com
+        HOMEPAGE_URL github.com/diligentcode/c-can
         LANGUAGES C)
 
 include_directories(include)
