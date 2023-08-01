@@ -99,9 +99,10 @@ Now the project specific variables need to be passed in.
 cmake .. -DZLIB_INCLUDE_DIR="$HOME/zlibArm/include" -DZLIB_LIBRARY="$HOME/zlibArm/lib/libz.so" -DMATH_LIBRARY=/opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/arm-linux-gnueabihf/libc/usr/lib/libm.so -DCMAKE_INSTALL_PREFIX="$HOME/c_canlibArm"
 ```
 
-Now the library can be built.
+Now the library can be built and installed.
 ```angular2html
 make
+make install
 ```
 
 
