@@ -3,7 +3,7 @@
 
 int main() {
     struct BLFWriterArgs args = {
-            .compression_level = Z_BEST_COMPRESSION,
+            .compression_level = Z_BEST_SPEED,
     };
 
     struct Logger logger = create_logger("file.blf", "can0", (void*)&args);

@@ -16,7 +16,7 @@ int main() {
     sigaction(SIGHUP, &action, NULL);
 
     struct BLFWriterArgs args = {
-            .compression_level = Z_BEST_COMPRESSION,
+            .compression_level = Z_BEST_SPEED,
     };
 
     struct RotatingLogger * r_logger = create_rotating_logger(
