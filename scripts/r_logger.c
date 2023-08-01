@@ -1,4 +1,4 @@
-#include <can/logger.h>
+#include <can/c_can.h>
 #include <signal.h>
 
 volatile sig_atomic_t done = 0;

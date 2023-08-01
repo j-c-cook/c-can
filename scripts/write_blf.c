@@ -1,5 +1,4 @@
-#include <can/logger.h>
-#include <can/message.h>
+#include <can/c_can.h>
 
 int main() {
     struct BLFWriterArgs args = {
