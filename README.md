@@ -22,3 +22,9 @@ Remote CAN data logging with an armv7l processor resulted in dropped CAN frames 
 - [x] socketcan
 - [ ] vector
 - [ ] pcan
+
+## Setup
+
+`sudo apt install emscripten`
+`sudo apt install cmake`
+`sudo apt install `

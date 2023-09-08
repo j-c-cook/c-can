@@ -10,25 +10,36 @@ set(VER_STRING ${VER_MAJOR}.${VER_MINOR}.${VER_PATCH})
 project(c_can
         VERSION ${VER_STRING}
         DESCRIPTION "CAN  logging in Linux."
-        HOMEPAGE_URL github.com/AGCO-EFG/linux-can.com
+        HOMEPAGE_URL github.com/diligentcode/c-can
         LANGUAGES C)
 
 include_directories(include)
-add_library(c_can SHARED src/bus.c src/message.c src/blf.c src/logger.c)
+
+set(SOURCE_FILES src/bus.c src/message.c src/blf.c src/logger.c)
+if (DEFINED EMSCRIPTEN)
+    add_executable(c_can ${SOURCE_FILES})
+
+    set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
+
+    set_target_properties(c_can PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 ")
+    set_target_properties(c_can PROPERTIES LINK_FLAGS    "-Os -s WASM=1 -s SIDE_MODULE=1 -s STANDALONE_WASM --no-entry")
+else()
+    add_library(c_can SHARED ${SOURCE_FILES})
+
+    # Math library is required
+    find_library(MATH_LIBRARY m REQUIRED)
+    if(MATH_LIBRARY)
+        target_link_libraries(c_can PUBLIC ${MATH_LIBRARY})
+    endif()
+
+    # zlib is required
+    find_library(ZLIB_LIBRARY z REQUIRED)
+    if(ZLIB_LIBRARY)
+        target_link_libraries(c_can PUBLIC ${ZLIB_LIBRARY})
+    endif()
+endif()
 
 set_target_properties(c_can PROPERTIES VERSION ${VER_STRING} SOVERSION ${VER_STRING})
-
-# Math library is required
-find_library(MATH_LIBRARY m REQUIRED)
-if(MATH_LIBRARY)
-    target_link_libraries(c_can PUBLIC ${MATH_LIBRARY})
-endif()
-
-# zlib is required
-find_library(ZLIB_LIBRARY z REQUIRED)
-if(ZLIB_LIBRARY)
-    target_link_libraries(c_can PUBLIC ${ZLIB_LIBRARY})
-endif()
 
 # Scripts
 add_executable(lcandump scripts/candump.c)
