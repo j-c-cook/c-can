@@ -117,19 +117,19 @@ void flush_(struct BLFWriter * blf_writer, FILE * file) {
     container_header.compression_method = compression_method;
     for (int i=0; i<LC_GAP0; i++)
         container_header.gap_0[i] = 0x0;
-    container_header.size_uncompressed = data_size;
+    container_header.size_uncompressed = blf_writer->buffer_size;
     for (int i=0; i<LC_GAP1; i++)
         container_header.gap_1[i] = 0x0;
     fwrite(&container_header, log_container_size, 1, file);
 
-    fwrite(data, sizeof (uint8_t), blf_writer->buffer_size, file);
+    fwrite(data, sizeof (uint8_t), data_size, file);
 
     // Write padding bytes
     uint8_t gap = 0x0;
     for (int i=0; i<obj_size%4; i++)
         fwrite(&gap, sizeof (uint8_t), 1, file);
 
-    blf_writer->uncompressed_size += obj_size;
+    blf_writer->uncompressed_size += blf_writer->buffer_size;
     blf_writer->buffer_size = 0;
 }
 
