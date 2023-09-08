@@ -4,21 +4,22 @@ A controller area network (CAN) library written in C.
 
 ## Background
 
-Remote CAN data logging with an armv7l processor resulted in dropped CAN frames while using the 
-`python-can` package. When supplied 500 messages per second with a bitrate of 250 kb/s (about a 
-57% bus load), the `python-can` package missed more than 13% of messages. This library, 
-`c-can`, captures all messages sent on the CAN bus when running on an armv7l processor. 
+Logging to binary log format (BLF) with the [python-can](github.com/hardbyte/puthon-can) package on embedded Linux (armv7l chip archetecture) resulted in dropped CAN frames. When supplied with 500 messages per second at a bitrate of 250 kb/s (about a 57% bus load), the `python-can` package missed more than 13% of messages on the armv7l chip. (The issue was not associated with `python-can` itself, but rather a lack of computing resources to effectively run a daemon in Python on the low power CPU.) `c-can` has been developed to enable successful BLF CAN logging on the armv7l archetecture. Though, the library can be cross-compiled for any archetecture (granted there is a gcc compiler available). 
 
-## Log writer types
+## Features 
+
+`c-can` has been developed with a generic IO and bus interface that is modeled after `python-can`. The feature set is intended to be expanded to enable cross-platform usage. 
+
+### Log writer types
 
 - [x] BLFWriter - Ported from https://github.com/hardbyte/python-can/blob/develop/can/io/blf.py
 
-## Log reader types
+### Log reader types
 
 - [ ] BLFReader
 
-## Interfaces
+### Interfaces
 
-- [x] socketcan
-- [ ] vector
-- [ ] pcan
+- [x] socketcan (Linux)
+- [ ] vector (Windows)
+- [ ] pcan (Windows, MacOS) 
