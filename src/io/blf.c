@@ -86,19 +86,20 @@ void flush_(struct BLFWriter * blf_writer, FILE * file) {
     ssize_t log_container_size = sizeof (struct Log_Container);
 
     uint8_t data[MAX_CONTAINER_SIZE];
+    ssize_t data_size = MAX_CONTAINER_SIZE;
     uint16_t compression_method;
     if (blf_writer->compression_level == Z_NO_COMPRESSION) {
         memcpy(data, blf_writer->buffer, blf_writer->buffer_size);
+        data_size = blf_writer->buffer_size;
         compression_method = Z_NO_COMPRESSION;
     } else {
         compress2(data,
-                  (uLongf *) &blf_writer->buffer_size,
+                  (uLongf *) &data_size,
                   (const Bytef *) blf_writer->buffer,
                   blf_writer->buffer_size,
                   blf_writer->compression_level);
         compression_method = ZLIB_DEFLATE;
     }
-    ssize_t data_size = blf_writer->buffer_size;
     ssize_t obj_size = obj_header_size + log_container_size + data_size;
 
     struct Obj_Header_Base base_header;
