@@ -34,11 +34,11 @@
 void timestamp_to_systemtime(double timestamp, uint16_t systemtime[]);
 
 struct BLFWriterArgs {
-    uint8_t compression_level;  // zlib compression information
+    int8_t compression_level;  // zlib compression information
 };
 
 struct BLFWriter {
-    uint16_t compression_level;
+    int8_t compression_level;
     uint8_t buffer[MAX_CONTAINER_SIZE];
     uint32_t buffer_size;
     double start_timestamp;
