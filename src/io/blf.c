@@ -129,7 +129,7 @@ void flush_(struct BLFWriter * blf_writer, FILE * file) {
     for (int i=0; i<obj_size%4; i++)
         fwrite(&gap, sizeof (uint8_t), 1, file);
 
-    blf_writer->uncompressed_size += blf_writer->buffer_size;
+    blf_writer->uncompressed_size += obj_header_size + log_container_size + blf_writer->buffer_size;
     blf_writer->buffer_size = 0;
 }
 
