@@ -86,19 +86,20 @@ void flush_(struct BLFWriter * blf_writer, FILE * file) {
     ssize_t log_container_size = sizeof (struct Log_Container);
 
     uint8_t data[MAX_CONTAINER_SIZE];
+    ssize_t data_size = MAX_CONTAINER_SIZE;
     uint16_t compression_method;
     if (blf_writer->compression_level == Z_NO_COMPRESSION) {
         memcpy(data, blf_writer->buffer, blf_writer->buffer_size);
+        data_size = blf_writer->buffer_size;
         compression_method = Z_NO_COMPRESSION;
     } else {
         compress2(data,
-                  (uLongf *) &blf_writer->buffer_size,
+                  (uLongf *) &data_size,
                   (const Bytef *) blf_writer->buffer,
                   blf_writer->buffer_size,
                   blf_writer->compression_level);
         compression_method = ZLIB_DEFLATE;
     }
-    ssize_t data_size = blf_writer->buffer_size;
     ssize_t obj_size = obj_header_size + log_container_size + data_size;
 
     struct Obj_Header_Base base_header;
@@ -116,19 +117,19 @@ void flush_(struct BLFWriter * blf_writer, FILE * file) {
     container_header.compression_method = compression_method;
     for (int i=0; i<LC_GAP0; i++)
         container_header.gap_0[i] = 0x0;
-    container_header.size_uncompressed = data_size;
+    container_header.size_uncompressed = blf_writer->buffer_size;
     for (int i=0; i<LC_GAP1; i++)
         container_header.gap_1[i] = 0x0;
     fwrite(&container_header, log_container_size, 1, file);
 
-    fwrite(data, sizeof (uint8_t), blf_writer->buffer_size, file);
+    fwrite(data, sizeof (uint8_t), data_size, file);
 
     // Write padding bytes
     uint8_t gap = 0x0;
     for (int i=0; i<obj_size%4; i++)
         fwrite(&gap, sizeof (uint8_t), 1, file);
 
-    blf_writer->uncompressed_size += obj_size;
+    blf_writer->uncompressed_size += obj_header_size + log_container_size + blf_writer->buffer_size;
     blf_writer->buffer_size = 0;
 }
 
