@@ -6,17 +6,16 @@ int main() {
             .compression_level = 6,
     };
 
-    struct Logger logger = create_logger("file.blf", "can0", (void*)&args);
+    struct Bus bus = bus_configure("socketcan", "can0", NULL);
+    struct Logger logger = create_logger("file.blf", (void*)&args);
 
     int count = 0;
 
-    while (count < 100000) {
-        struct Message * msg = capture_message(logger.s);
+    while (count < 100) {
+        struct Message msg = bus_recv(&bus, 0.0);
 
-        if (msg != NULL)
-            on_message_received(&logger, msg);
-
-        free_message(msg);
+        if (msg._recv_error == false)
+            on_message_received(&logger, &msg);
 
         count += 1;
     }
