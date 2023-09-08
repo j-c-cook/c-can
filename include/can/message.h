@@ -13,6 +13,7 @@ struct Message {
     bool is_extended_id;
     bool is_remote_frame;
     bool is_error_frame;
+    bool _recv_error;
 };
 
 void fill_message(struct Message * msg, struct can_frame * frame, struct timeval *tv);

@@ -24,6 +24,8 @@ void fill_message(struct Message * msg, struct can_frame * frame, struct timeval
         msg->arbitration_id = frame->can_id & 0x000007FF;
     }
 
+    msg->_recv_error = false;
+
 }
 
 void print_message(struct Message * msg) {
@@ -32,5 +34,5 @@ void print_message(struct Message * msg) {
     for (int i = 0; i < msg->dlc; i++)
         printf("%02X ", msg->data[i]);
 
-    printf("\r\n");
+    printf("\n");
 }
