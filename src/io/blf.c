@@ -1,11 +1,15 @@
+// c-can - a CAN hardware interface and logging library written in C.
+// Copyright (C) 2023 Diligent Code LLC
+// https://github.com/diligentcode/c-can/blob/main/LICENSE
+
 /**
- * Seeks to implement BLF (Binary Logging Format) read/write functionality. The BLF file format is
- * proprietary and was created by Vector Informatik GmbH (Germany).
+ * Implements BLF (Binary Logging Format) write functionality. The BLF file format is proprietary
+ * and was created by Vector Informatik GmbH (Germany).
  *
  * Vector does not provide a specification for the BLF format. The source code contained in this
  * module is an adaptation of the implementation at hardbyte's python-can branch, which was
  * developed by the python-can contributors
- * (https://github.com/hardbyte/python-can/blob/develop/can/io/blf.py) and is licenced under GPLv3.
+ * (https://github.com/hardbyte/python-can/blob/develop/can/io/blf.py) and is licenced under LGPLv3.
  *
  */
 
@@ -200,7 +204,7 @@ void blf_create_logger(void * logger_ptr, void * args) {
 
 void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
     struct CANMessage blf_message;
-    blf_message.channel = 1;
+    blf_message.channel = 1; // TODO: Utilize the actual channel
     blf_message.arbitration_id = can_msg->arbitration_id;
     if (can_msg->is_extended_id)
         blf_message.arbitration_id |= CAN_MSG_EXT;

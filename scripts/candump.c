@@ -17,30 +17,24 @@ int main() {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    int s = create_socket();
-    bind_socket(s, "can0");
+    struct Bus bus = bus_configure("socketcan", "can0", NULL);
 
     uint16_t t_stamp[8];
 
-    struct Message * msg;
+    struct Message msg;
     while (!done) {
-        msg = capture_message(s);
+        msg = bus_recv(&bus, 0.0);
 
-        if (msg != NULL) {
-            timestamp_to_systemtime(msg->timestamp, t_stamp);
+        if (msg._recv_error != true) {
+            timestamp_to_systemtime(msg.timestamp, t_stamp);
             for (int i=0; i<8; i++) {
                 printf("%i ", t_stamp[i]);
             }
-            print_message(msg);
+            print_message(&msg);
         } // fi
-
-        free_message(msg);
     }
 
-    if (msg != NULL)
-        free_message(msg);
-
-    close_socket(s);
+    bus_shutdown(&bus);
 
     return 0;
 }

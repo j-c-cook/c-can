@@ -1,22 +1,25 @@
 #ifndef LINUX_CAN_BUS_H
 #define LINUX_CAN_BUS_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <can/message.h>
 
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
+struct Bus_vtable {
+    int (*open)(void * interface, const char * channel);
+    struct Message (*on_message_received)(void * interface, double timeout);
+    // TODO: type (*send)(args);
+    int (*close)(void * interface);
+};
 
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <linux/sockios.h>
+struct Bus {
+    const char * channel;
+    const char * interface_name;
+    void * interface;
+    struct Bus_vtable methods;
+    bool _configure_success;
+};
 
-int create_socket();
-int bind_socket(int sock, const char * channel);
-struct Message * capture_message(int sock);
-void free_message(struct Message *);
-int close_socket(int s);
+struct Bus bus_configure(char * file_name, const char * channel, void * args);
+struct Message bus_recv(struct Bus * bus, double timeout);
+int bus_shutdown(struct Bus * bus);
 
 #endif //LINUX_CAN_BUS_H

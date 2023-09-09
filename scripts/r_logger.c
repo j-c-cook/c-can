@@ -15,18 +15,23 @@ int main() {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
+    struct Bus bus = bus_configure("socketcan", "can0", NULL);
+
     struct BLFWriterArgs args = {
-            .compression_level = 6, // level 6 compression
+            .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
-    struct RotatingLogger * r_logger = create_rotating_logger(
-            "can0", "file.blf", 250000, 300, (void*)&args);
+    struct RotatingLogger r_logger = create_rotating_logger(
+            "file.blf", 250000, 300, (void*)&args);
 
     while (!done) {
-        log_msg(r_logger);
+        struct Message msg = bus_recv(&bus, 0.0);
+
+        if (msg._recv_error == false)
+            log_msg(&r_logger, &msg);
     }
 
-    shutdown_rotating(r_logger);
+    shutdown_rotating(&r_logger);
 
     return 0;
 }

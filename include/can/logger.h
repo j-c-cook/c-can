@@ -13,15 +13,13 @@ struct Logger_vtable {
 struct Logger {
     char * file_name;
     FILE * file;
-    int s;
-    char * channel;
 
     void * writer;
     struct Logger_vtable methods;
     void * args;
 };
 
-struct Logger create_logger(char * file_name, char * channel, void *args);
+struct Logger create_logger(char * file_name, void *args);
 void on_message_received(struct Logger * logger, struct Message *can_msg);
 void stop_logger(struct Logger * logger);
 
@@ -42,14 +40,13 @@ struct RotatingLogger {
     struct RotatingLogger_vtable methods;
 };
 
-struct RotatingLogger * create_rotating_logger(
-        char * channel,
+struct RotatingLogger create_rotating_logger(
         char * file_name,
         uint64_t max_bytes,
         uint64_t delta_t,
         void * args);
 
-void log_msg(struct RotatingLogger *);
+void log_msg(struct RotatingLogger * r_logger, struct Message * msg);
 
 void shutdown_rotating(struct RotatingLogger * r_logger);
 
