@@ -5,7 +5,7 @@ int main() {
             .compression_level = Z_DEFAULT_COMPRESSION
     };
 
-    struct Logger logger = create_logger("file.blf", "can0", (void*)&args);
+    struct Logger logger = create_logger("file.blf", (void*)&args);
 
     struct Message msg;
     msg.timestamp = (double)1685225282.8679;
