@@ -26,5 +26,8 @@ Logging to binary log format (BLF) with the [python-can](https://github.com/hard
 
 ## Usage
 
-Create a rotating logger that is mounted to `can0` using the `socketcan` interface.
-`./rlogger &`
+Create a rotating logger daemon that is mounted to `can0` using the `socketcan` interface.
+
+```
+./rlogger &
+```
