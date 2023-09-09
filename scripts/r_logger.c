@@ -18,7 +18,7 @@ int main() {
     struct Bus bus = bus_configure("socketcan", "can0", NULL);
 
     struct BLFWriterArgs args = {
-            .compression_level = 6, // level 6 compression
+            .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
     struct RotatingLogger r_logger = create_rotating_logger(

@@ -3,7 +3,7 @@
 
 int main() {
     struct BLFWriterArgs args = {
-            .compression_level = 6,
+            .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
     struct Bus bus = bus_configure("socketcan", "can0", NULL);
