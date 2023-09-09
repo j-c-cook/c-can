@@ -75,6 +75,7 @@ access to that. IDE specific documentation is not described here.
 Set the external cmake cache entries that are related to the toolchain. Note that at any point the `CmakeCache.txt` 
 file can be inspected for accuracy. 
 ```angular2html
+mkdir build && cd build
 cmake .. -DCMAKE_ADDR2LINE="${cross}-addr2line" -DCMAKE_AR="${cross}-ar" -DCMAKE_C_COMPILER="${cross}-gcc" -DCMAKE_C_COMPILER_AR="${cross}-ar" -DCMAKE_C_COMPILER_RANLIB="${cross}-gcc-ranlib" -DCMAKE_LINKER="${cross}-ld" -DCMAKE_NM="${cross}-nm" -DCMAKE_OBJCOPY="${cross}-objcopy" -DCMAKE_OBJDUMP="${cross}-objdump" -DCMAKE_RANLIB="${cross}-ranlib" -DCMAKE_READELF="${cross}-readelf" -DCMAKE_STRIP="{cross}-strip" 
 ```
 
