@@ -23,3 +23,8 @@ Logging to binary log format (BLF) with the [python-can](github.com/hardbyte/put
 - [x] socketcan (Linux)
 - [ ] vector (Windows)
 - [ ] pcan (Windows, MacOS) 
+
+## Usage
+
+Create a rotating logger that is mounted to `can0` using the `socketcan` interface.
+`./rlogger &`
