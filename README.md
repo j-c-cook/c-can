@@ -4,7 +4,7 @@ A controller area network (CAN) library written in C.
 
 ## Background
 
-Logging to binary log format (BLF) with the [python-can](github.com/hardbyte/puthon-can) package on embedded Linux (armv7l chip archetecture) resulted in dropped CAN frames. When supplied with 500 messages per second at a bitrate of 250 kb/s (about a 57% bus load), the `python-can` package missed more than 13% of messages on the armv7l chip. (The issue was not associated with `python-can` itself, but rather a lack of computing resources to effectively run a daemon in Python on the low power CPU.) `c-can` has been developed to enable successful BLF CAN logging on the armv7l archetecture. Though, the library can be cross-compiled for any archetecture (granted there is a compiler available). 
+Logging to binary log format (BLF) with the [python-can](https://github.com/hardbyte/python-can) package on embedded Linux (armv7l chip archetecture) resulted in dropped CAN frames. When supplied with 500 messages per second at a bitrate of 250 kb/s (about a 57% bus load), the `python-can` package missed more than 13% of messages on the armv7l chip. (The issue was not associated with `python-can` itself, but rather a lack of computing resources to effectively run a daemon in Python on the low power CPU.) `c-can` has been developed to enable successful BLF CAN logging on the armv7l archetecture. Though, the library can be cross-compiled for any archetecture (granted there is a compiler available). 
 
 ## Features 
 
