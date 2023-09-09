@@ -68,7 +68,7 @@ struct RotatingLogger create_rotating_logger(
     return r_logger;
 }
 
-void default_filename_(char * f_name, size_t max_len, const uint32_t rollover_count, const char * channel) {
+void default_filename_(char * rollover_name, char * file_name, size_t max_len, const uint32_t rollover_count) {
     time_t timestamp = time(NULL); // seconds since January 1, 1970
     struct tm ptr_time;
     (void) gmtime_r(&timestamp, &ptr_time);
@@ -79,13 +79,16 @@ void default_filename_(char * f_name, size_t max_len, const uint32_t rollover_co
 
     const uint8_t f_end_len = 10;
     char f_end[f_end_len];
-    snprintf (f_end, f_end_len, "_%04d.blf", rollover_count);
+    const char * file_ext = get_filename_ext(file_name);
+    snprintf (f_end, f_end_len, "_%04d.%s", rollover_count, file_ext);
 
+    // TODO: (1) automatically find file path stem and (2) allow full file paths to be used
+    //       r_logger->logger.file_name
     const uint8_t f_start_len = 8;
     char f_start[f_start_len];
-    snprintf(f_start, f_start_len, "%s_", channel);
+    snprintf(f_start, f_start_len, "%s_", "file");
 
-    snprintf(f_name, max_len, "%s%s%s", f_start, f_time, f_end);
+    snprintf(rollover_name, max_len, "%s%s%s", f_start, f_time, f_end);
 }
 
 void log_msg(struct RotatingLogger * r_logger, struct Message * msg) {
@@ -98,10 +101,14 @@ void log_msg(struct RotatingLogger * r_logger, struct Message * msg) {
     bool file_passed_time = (msg->timestamp - r_logger->last_rollover_time) > (double)r_logger->delta_t;
     if (file_over_size || file_passed_time) {
         const uint8_t f_name_len = 80;
-        char f_name[f_name_len];
-        default_filename_(f_name, f_name_len, r_logger->rollover_count, "filename"); // TODO: use filepath stem
+        char rollover_name[f_name_len];
+        default_filename_(
+                rollover_name,
+                r_logger->logger.file_name,
+                f_name_len,
+                r_logger->rollover_count);
 
-        r_logger->methods.rollover(&r_logger->logger, filesize, f_name);
+        r_logger->methods.rollover(&r_logger->logger, filesize, rollover_name);
         r_logger->last_rollover_time = msg->timestamp;
         r_logger->rollover_count += 1;
     }
@@ -111,7 +118,10 @@ void log_msg(struct RotatingLogger * r_logger, struct Message * msg) {
 
 void shutdown_rotating(struct RotatingLogger * r_logger) {
     const uint8_t f_name_len = 80;
-    char f_name[f_name_len];
-    default_filename_(f_name, f_name_len, r_logger->rollover_count, "filename"); // TODO: use filepath stem
+    char rollover_name[f_name_len];
+    default_filename_(rollover_name,
+                      r_logger->logger.file_name,
+                      f_name_len,
+                      r_logger->rollover_count);
     r_logger->logger.methods.stop_logger(&r_logger->logger);
 }
