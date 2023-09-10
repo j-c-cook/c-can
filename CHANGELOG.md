@@ -8,6 +8,7 @@
 ## Version 0.2
 
 - The creation of a logger now requires a file name input.
+- Logger interface is made generic. 
 
 ## Version 0.1.1
 
