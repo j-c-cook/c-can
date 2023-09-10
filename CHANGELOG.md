@@ -1,6 +1,11 @@
-# Linux-CAN changelog
+# C-CAN changelog
 
-## Version 0.2 (WIP)
+## Version 0.3 
+
+- Fixes BLF compression.
+- Updates bus API to be generic for interfaces.
+
+## Version 0.2
 
 - The creation of a logger now requires a file name input.
 
