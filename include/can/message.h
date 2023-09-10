@@ -1,5 +1,5 @@
-#ifndef LINUX_CAN_MESSAGE_H
-#define LINUX_CAN_MESSAGE_H
+#ifndef C_CAN_MESSAGE_H
+#define C_CAN_MESSAGE_H
 
 #include <stdbool.h>
 #include <linux/can.h>
@@ -19,4 +19,4 @@ struct Message {
 void fill_message(struct Message * msg, struct can_frame * frame, struct timeval *tv);
 void print_message(struct Message * msg);
 
-#endif //LINUX_CAN_MESSAGE_H
+#endif //C_CAN_MESSAGE_H

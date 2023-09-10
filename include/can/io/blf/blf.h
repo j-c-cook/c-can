@@ -1,5 +1,5 @@
-#ifndef LINUX_CAN_BLF_H
-#define LINUX_CAN_BLF_H
+#ifndef C_CAN_BLF_H
+#define C_CAN_BLF_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -52,4 +52,4 @@ void blf_on_message_received(void *, struct Message * can_msg);
 void blf_rollover(void * logger_ptr, uint64_t filesize, const char * new_filename);
 void blf_stop_logger(void * logger_ptr);
 
-#endif //LINUX_CAN_BLF_H
+#endif //C_CAN_BLF_H

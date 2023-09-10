@@ -1,5 +1,5 @@
-#ifndef LINUX_CAN_LOGGER_H
-#define LINUX_CAN_LOGGER_H
+#ifndef C_CAN_LOGGER_H
+#define C_CAN_LOGGER_H
 
 #include <stdint.h>
 #include <can/io/blf/blf.h>
@@ -50,4 +50,4 @@ void log_msg(struct RotatingLogger * r_logger, struct Message * msg);
 
 void shutdown_rotating(struct RotatingLogger * r_logger);
 
-#endif //LINUX_CAN_LOGGER_H
+#endif //C_LOGGER_H

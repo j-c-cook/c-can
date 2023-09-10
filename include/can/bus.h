@@ -1,5 +1,5 @@
-#ifndef LINUX_CAN_BUS_H
-#define LINUX_CAN_BUS_H
+#ifndef C_CAN_BUS_H
+#define C_CAN_BUS_H
 
 #include <can/message.h>
 
@@ -22,4 +22,4 @@ struct Bus bus_configure(char * file_name, const char * channel, void * args);
 struct Message bus_recv(struct Bus * bus, double timeout);
 int bus_shutdown(struct Bus * bus);
 
-#endif //LINUX_CAN_BUS_H
+#endif //C_CAN_BUS_H
