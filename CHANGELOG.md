@@ -3,12 +3,12 @@
 ## Version 0.3 
 
 - Fixes BLF compression.
-- Updates bus API to be generic for interfaces.
+- Updates bus API to be generic for hardware interfaces.
 
 ## Version 0.2
 
 - The creation of a logger now requires a file name input.
-- Logger interface is made generic. 
+- File logger API is made generic. 
 
 ## Version 0.1.1
 
