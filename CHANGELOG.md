@@ -8,7 +8,8 @@
 ## Version 0.2
 
 - The creation of a logger now requires a file name input.
-- File logger API is made generic. 
+- File logger API is made generic.
+- Install instructions are added to CMakeLists. 
 
 ## Version 0.1.1
 
