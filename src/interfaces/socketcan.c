@@ -55,14 +55,13 @@ struct Message capture_message(int sock) {
     struct can_frame frame;
     struct timeval tv;
     ssize_t nbytes = recv(sock, &frame, sizeof (struct can_frame), CAN_MTU);
-    ioctl(sock, SIOCGSTAMP, &tv);
 
     if (nbytes < 0) {
-        perror("Read");
         msg._recv_error = true;
         return msg;
     }
 
+    ioctl(sock, SIOCGSTAMP, &tv);
     fill_message(&msg, &frame, &tv);
 
     return msg;
@@ -87,7 +86,6 @@ int socketcan_startup(void * interface, const char * channel) {
 struct Message socketcan_recv(void * interface, double timeout) {
     struct SocketCan * socket_can = (struct SocketCan*)interface;
 
-    // TODO: Utilize timeout for capture_message timeout
     return capture_message(socket_can->sock);
 }
 
@@ -113,4 +111,8 @@ void socketcan_configure(void * _bus, void * args) {
     bus->methods.close = &socketcan_shutdown;
 
     bus->_configure_success = true;
+}
+
+void set_socket_timeout(struct SocketCan * socket_can, struct timeval tv) {
+    setsockopt(socket_can->sock,SOL_SOCKET,SO_RCVTIMEO,(const char*)&tv,sizeof tv);
 }
