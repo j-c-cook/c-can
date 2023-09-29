@@ -86,7 +86,7 @@ void default_filename_(char * rollover_name, char * file_name, size_t max_len, c
     //       r_logger->logger.file_name
     const uint8_t f_start_len = 8;
     char f_start[f_start_len];
-    snprintf(f_start, f_start_len, "%s_", "file");
+    snprintf(f_start, f_start_len, "%s_", "can0");
 
     snprintf(rollover_name, max_len, "%s%s%s", f_start, f_time, f_end);
 }

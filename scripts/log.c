@@ -6,7 +6,7 @@ int main() {
             .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
-    struct Bus bus = bus_configure("socketcan", "can0", NULL);
+    struct Bus bus = bus_configure("socketcan", "can0", 1, NULL);
     struct Logger logger = create_logger("file.blf", (void*)&args);
 
     int count = 0;

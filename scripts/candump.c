@@ -17,7 +17,7 @@ int main() {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    struct Bus bus = bus_configure("socketcan", "can0", NULL);
+    struct Bus bus = bus_configure("socketcan", "can0", 1, NULL);
 
     uint16_t t_stamp[8];
 
