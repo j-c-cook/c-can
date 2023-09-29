@@ -10,6 +10,7 @@ struct Message {
     u_int32_t arbitration_id;
     u_int8_t dlc;
     u_int8_t data[CAN_MAX_DLEN];
+    u_int16_t channel;
     bool is_extended_id;
     bool is_remote_frame;
     bool is_error_frame;
