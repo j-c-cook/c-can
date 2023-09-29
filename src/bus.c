@@ -7,11 +7,12 @@
 
 #include <string.h>
 
-struct Bus bus_configure(char * interface_name, const char * channel, void * args) {
+struct Bus bus_configure(char * interface_name, const char * channel, u_int16_t channel_idx, void * args) {
     struct Bus bus;
 
     bus.channel = channel;
     bus.interface_name = interface_name;
+    bus.channel_idx = channel_idx;
     if (strcmp("socketcan", interface_name) == 0) {
         socketcan_configure((void*)&bus, args);
     } else {
@@ -25,7 +26,9 @@ struct Bus bus_configure(char * interface_name, const char * channel, void * arg
 }
 
 struct Message bus_recv(struct Bus * bus, double timeout) {
-    return bus->methods.on_message_received(bus->interface, timeout);
+    struct Message can_msg = bus->methods.on_message_received(bus->interface, timeout);
+    can_msg.channel = bus->channel_idx;
+    return can_msg;
 }
 
 int bus_shutdown(struct Bus * bus) {

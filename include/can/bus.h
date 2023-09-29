@@ -12,13 +12,14 @@ struct Bus_vtable {
 
 struct Bus {
     const char * channel;
+    u_int16_t channel_idx;
     const char * interface_name;
     void * interface;
     struct Bus_vtable methods;
     bool _configure_success;
 };
 
-struct Bus bus_configure(char * file_name, const char * channel, void * args);
+struct Bus bus_configure(char * interface_name, const char * channel, u_int16_t channel_idx, void * args);
 struct Message bus_recv(struct Bus * bus, double timeout);
 int bus_shutdown(struct Bus * bus);
 
