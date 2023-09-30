@@ -48,6 +48,46 @@ int bind_socket(int sock, const char * channel) {
     return bound;
 }
 
+void fill_message(struct Message * msg, struct can_frame * frame, struct timeval *tv) {
+    const double us_to_s = 1e-6;
+    msg->timestamp = (double)tv->tv_sec + (double)tv->tv_usec * us_to_s;
+    msg->arbitration_id = frame->can_id;
+    msg->dlc = frame->can_dlc;
+
+    for (int i = 0; i < frame->can_dlc; i++)
+        msg->data[i] = frame->data[i];
+
+    msg->is_extended_id = frame->can_id & CAN_EFF_FLAG;
+    msg->is_remote_frame = frame->can_id & CAN_RTR_FLAG;
+    msg->is_error_frame = frame->can_id & CAN_ERR_FLAG;
+
+    if (msg->is_extended_id) {
+        msg->arbitration_id = frame->can_id & 0x1FFFFFFF;
+    } else {
+        msg->arbitration_id = frame->can_id & 0x000007FF;
+    }
+
+    msg->_recv_error = false;
+}
+
+void fill_frame(struct Message * msg, struct can_frame * frame) {
+    frame->can_id = msg->arbitration_id;
+    frame->can_dlc = msg->dlc;
+
+    for (int i=0; i<frame->can_dlc; i++) {
+        frame->data[i] = msg->data[i];
+    }
+
+    if (msg->is_extended_id)
+        frame->can_id |= CAN_EFF_FLAG;
+
+    if (msg->is_remote_frame)
+        frame->can_id |= CAN_RTR_FLAG;
+
+    if (msg->is_error_frame)
+        frame->can_id |= CAN_ERR_FLAG;
+}
+
 struct Message capture_message(int sock) {
     // TODO: Use recv_msg so that the error information can be captured
     struct Message msg;
@@ -83,6 +123,17 @@ int socketcan_startup(void * interface, const char * channel) {
     return bind_socket(socket_can->sock, channel);
 }
 
+int socketcan_send(void * interface, struct Message * can_msg) {
+    struct SocketCan * socket_can = (struct SocketCan *)interface;
+
+    struct can_frame frame;
+    fill_frame(can_msg, &frame);
+
+    ssize_t nbytes = send(socket_can->sock, &frame, sizeof (struct can_frame), CAN_MTU);
+
+    return 0;
+}
+
 struct Message socketcan_recv(void * interface, double timeout) {
     struct SocketCan * socket_can = (struct SocketCan*)interface;
 
@@ -108,6 +159,7 @@ void socketcan_configure(void * _bus, void * args) {
 
     bus->methods.open = &socketcan_startup;
     bus->methods.on_message_received = &socketcan_recv;
+    bus->methods.send = &socketcan_send;
     bus->methods.close = &socketcan_shutdown;
 
     bus->_configure_success = true;

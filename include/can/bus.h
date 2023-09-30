@@ -6,7 +6,7 @@
 struct Bus_vtable {
     int (*open)(void * interface, const char * channel);
     struct Message (*on_message_received)(void * interface, double timeout);
-    // TODO: type (*send)(args);
+    int (*send)(void * interface, struct Message * can_msg);
     int (*close)(void * interface);
 };
 

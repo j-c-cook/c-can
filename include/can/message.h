@@ -17,7 +17,6 @@ struct Message {
     bool _recv_error;
 };
 
-void fill_message(struct Message * msg, struct can_frame * frame, struct timeval *tv);
 void print_message(struct Message * msg);
 
 #endif //C_CAN_MESSAGE_H
