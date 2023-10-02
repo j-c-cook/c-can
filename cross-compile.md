@@ -107,6 +107,8 @@ make
 make install
 ```
 
+Note: The project can now be zipped using `tar -czvf file.tar.gz directory`.
+
 
 
 [#gneeabihf]: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/
