@@ -4,7 +4,7 @@ set(CMAKE_C_STANDARD 11)
 
 set(VER_MAJOR 0)
 set(VER_MINOR 4)
-set(VER_PATCH 1)
+set(VER_PATCH 2)
 set(VER_STRING ${VER_MAJOR}.${VER_MINOR}.${VER_PATCH})
 
 project(c_can
