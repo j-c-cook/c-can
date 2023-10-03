@@ -86,7 +86,7 @@ int main() {
     };
 
     struct RotatingLogger r_logger = create_rotating_logger(
-            "file.blf", 250000, 300, (void*)&args);
+            "file.blf", 1000000, 300, (void*)&args);
 
     send_address_claim(&buses[0], &r_logger);
 
