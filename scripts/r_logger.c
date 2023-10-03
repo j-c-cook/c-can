@@ -28,20 +28,21 @@ u_int32_t get_pgn(uint32_t frame_id) {
     return pgn;
 }
 
-void send_address_claim(struct Bus * can_bus) {
+void send_address_claim(struct Bus * can_bus, struct RotatingLogger * r_logger) {
     struct Message can_msg;
     can_msg.arbitration_id = 0x18eefff9;
     can_msg.dlc = 8;
     can_msg.is_extended_id = 1;
     can_msg.is_remote_frame = false;
     can_msg.is_error_frame = false;
-    uint64_t data = 0x201281000cc00000;
-    for (int i=1; i<8+1; i++) {
+    uint64_t data = 0x0000c00c00810000;
+    for (int i=8; i>0; i--) {
         uint8_t shift_right = 64 - (8 * i);
         can_msg.data[i-1] = (data >> shift_right) & 0xff;
     }
 
     can_bus->methods.send(can_bus->interface, &can_msg);
+    log_msg(r_logger, &can_msg);
 }
 
 void monitor(struct Bus * can_bus, struct RotatingLogger * r_logger) {
@@ -51,7 +52,8 @@ void monitor(struct Bus * can_bus, struct RotatingLogger * r_logger) {
         log_msg(r_logger, &msg);
         if (can_bus->channel_idx == 2) {
             if (get_pgn(msg.arbitration_id) == 0xea00) {
-                if (((msg.data[1] << 8) | msg.data[0]) == 0xee00) send_address_claim(can_bus);
+                if (((msg.data[1] << 8) | msg.data[0]) == 0xee00)
+                    send_address_claim(can_bus, r_logger);
             }
         } // fi
     } // fi
@@ -86,7 +88,7 @@ int main() {
     struct RotatingLogger r_logger = create_rotating_logger(
             "file.blf", 250000, 300, (void*)&args);
 
-    send_address_claim(&buses[0]);
+    send_address_claim(&buses[0], &r_logger);
 
     while (!done) {
         for (int i=0; i<num_buses; i++) {
