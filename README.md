@@ -24,6 +24,11 @@ Logging to binary log format (BLF) with the [python-can](https://github.com/hard
 - [ ] vector (Windows)
 - [ ] pcan (Windows, MacOS) 
 
+## Cross-compile
+
+See [cross-compile.md](cross-compile.md) for instructions on how to use the Linaro gnueabihf 
+toolchain to create a compiled library that can execute on an armv7l chip. 
+
 ## Usage
 
 Create a rotating logger daemon that is mounted to `can0` using the `socketcan` interface.

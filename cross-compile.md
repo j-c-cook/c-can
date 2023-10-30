@@ -1,21 +1,22 @@
 # Cross Compile
 
-These notes describe the process required to cross-compile `c-can` for the armv7l architecture using the 
-[arm-linux-gnueabihf][#gneeabihf] toolchain. Some of these notes are sourced from [gist.cross-compile-python.md][#gist].
+These notes describe the process required to cross-compile `c-can` for the armv7l architecture 
+using the [arm-linux-gnueabihf][#gneeabihf] toolchain. Some of these notes are sourced from 
+[gist.cross-compile-python.md][#gist]. All of the following commands are valid for Ubuntu.
 
 ## Download and unpack the toolchain 
 
 ```angular2html
-$ cd $HOME/Downloads
-$ wget https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
-$ sudo mkdir /opt/
-$ tar -xvf gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz -C /opt/
+cd $HOME/Downloads
+wget https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+sudo mkdir /opt/
+tar -xvf gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz -C /opt/
 ```
 
 It's going to be useful to create a local variable named `cross` that describes the path to the cross-compilation 
 toolchain. 
 ```angular2html
-$ export cross=/opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf
+export cross=/opt/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf
 ```
 
 ## Cross-compile library dependencies
@@ -27,15 +28,15 @@ First, download and unpack the library. The zlib version used here is `v1.2.11`.
 of the version that is given in the buildroot package used to create the `rootfs`. Check the zlib version that is 
 loaded onto the target device. 
 ```angular2html
-$ cd $HOME/Downloads
-$ wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz  # zlib version 1.2.11
-$ tar -xvf v1.2.11.tar.gz && cd zlib-1.2.11/
+cd $HOME/Downloads
+wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz  # zlib version 1.2.11
+tar -xvf v1.2.11.tar.gz && cd zlib-1.2.11/
 ```
 
 The library needs to be informed of which tools to use, and given an installation prefix that describes where the 
 library will be installed once it is built. 
 ```angular2html
-$ CHOST="${cross}" CC="${cross}-gcc" CXX="${cross}-g++" AR="${cross}-ar" LD="${cross}-ld" RANLIB="${cross}-ranlib" ./configure --prefix=$HOME/zlibArm
+CHOST="${cross}" CC="${cross}-gcc" CXX="${cross}-g++" AR="${cross}-ar" LD="${cross}-ld" RANLIB="${cross}-ranlib" ./configure --prefix=$HOME/zlibArm
 ```
 <details><summary>The details inside this dropdown contain the configure output.</summary>
 
@@ -61,8 +62,8 @@ Checking for attribute(visibility) support... Yes.
 
 Now the `z` library can be compiled and installed. 
 ```angular2html
-$ make
-$ make install
+make
+make install
 ```
 Remember that the installation prefix was set to `$HOME/zlibArm`, and that is where the library can now be found at.
 
@@ -105,6 +106,8 @@ Now the library can be built and installed.
 make
 make install
 ```
+
+Note: The project can now be zipped using `tar -czvf file.tar.gz directory`.
 
 
 
