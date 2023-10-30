@@ -13,6 +13,22 @@ const char *get_filename_ext(const char *file_name) {
     return dot + 1;
 }
 
+void get_filename(const char *file_name, char *result) {
+    int i, j = 0;
+    int len = strlen(file_name);
+
+    // Find the position of the last dot (.)
+    for (i = len - 1; i >= 0 && file_name[i] != '.'; i--);
+
+    // Copy characters before the last dot (.) to the result string
+    for (j = 0; j < i; j++) {
+        result[j] = file_name[j];
+    }
+
+    // Add null terminator to the result string
+    result[j] = '\0';
+}
+
 struct Logger create_logger(char * file_name, void *args) {
     struct Logger logger;
 
@@ -82,11 +98,12 @@ void default_filename_(char * rollover_name, char * file_name, size_t max_len, c
     const char * file_ext = get_filename_ext(file_name);
     snprintf (f_end, f_end_len, "_%04d.%s", rollover_count, file_ext);
 
-    // TODO: (1) automatically find file path stem and (2) allow full file paths to be used
-    //       r_logger->logger.file_name
+    // TODO: Allow full file paths to be used r_logger->logger.file_name
     const uint8_t f_start_len = 8;
     char f_start[f_start_len];
-    snprintf(f_start, f_start_len, "%s_", "can0");
+    char f_name[10];
+    get_filename(file_name, f_name);
+    snprintf(f_start, f_start_len, "%s_", f_name);
 
     snprintf(rollover_name, max_len, "%s%s%s", f_start, f_time, f_end);
 }
