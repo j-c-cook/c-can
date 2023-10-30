@@ -1,6 +1,7 @@
 #include <can/c_can.h>
 #include <signal.h>
 #include <can/interfaces/socketcan.h>
+#include <stdlib.h>
 
 
 volatile sig_atomic_t done = 0;
@@ -59,48 +60,42 @@ void monitor(struct Bus * can_bus, struct RotatingLogger * r_logger) {
     } // fi
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    // Read command line args
+    const char * channel = argv[1];
+    const char * file_name = argv[2];
+    int channel_idx = atoi(argv[3]);
+
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = term;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    const uint8_t num_buses = 3;
-
-    struct Bus buses[num_buses];
-    buses[0] = bus_configure("socketcan", "can0", 1, NULL);
-    buses[1] = bus_configure("socketcan", "can1", 2, NULL);
-    buses[2] = bus_configure("socketcan", "can2", 3, NULL);
+    struct Bus bus = bus_configure("socketcan", channel, channel_idx, NULL);
 
     // Set timeout for CAN socket reading
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1;
-    for (int i=0; i<num_buses; i++) {
-        set_socket_timeout((struct SocketCan*)buses[i].interface, tv);
-    }
+    set_socket_timeout((struct SocketCan*)bus.interface, tv);
 
     struct BLFWriterArgs args = {
             .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
     struct RotatingLogger r_logger = create_rotating_logger(
-            "file.blf", 1000000, 300, (void*)&args);
+            file_name, 1000000, 300, (void*)&args);
 
-    send_address_claim(&buses[0], &r_logger);
+    send_address_claim(&bus, &r_logger);
 
     while (!done) {
-        for (int i=0; i<num_buses; i++) {
-            monitor(&buses[i], &r_logger);
-        }
+        monitor(&bus, &r_logger);
     }
 
     shutdown_rotating(&r_logger);
 
-    for (int i=0; i<num_buses; i++) {
-        buses[i].methods.close(buses[i].interface);
-    }
+    bus.methods.close(bus.interface);
 
     return 0;
 }
