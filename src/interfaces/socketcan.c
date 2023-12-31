@@ -1,6 +1,6 @@
 // c-can - a CAN hardware interface and file logging library written in C.
-// Copyright (C) 2023 Diligent Code LLC
-// https://github.com/diligentcode/c-can/blob/main/LICENSE
+// Copyright (C) 2023 Jack Cook
+// https://github.com/j-c-cook/c-can/blob/main/LICENSE
 
 #include <can/interfaces/socketcan.h>
 #include <can/message.h>

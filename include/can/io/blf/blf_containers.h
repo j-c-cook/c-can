@@ -1,6 +1,6 @@
 // c-can - a CAN hardware interface and logging library written in C.
-// Copyright (C) 2023 Diligent Code LLC
-// https://github.com/diligentcode/c-can/blob/main/LICENSE
+// Copyright (C) 2023 Jack Cook
+// https://github.com/j-c-cook/c-can/blob/main/LICENSE
 
 /**
  * Containers that are private to the BLF format.
