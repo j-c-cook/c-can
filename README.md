@@ -14,27 +14,19 @@ compiler available).
 
 ## Features 
 
-`c-can` has been developed with a generic IO and bus interface that is modeled after `python-can`. The feature set is 
-intended to be expanded to enable cross-platform usage. 
+`c-can` has been developed with a generic IO and bus interface that is modeled after `python-can`. Though, this library is focussed on logging with Linux's socketcan to BLF files. 
 
 ### Log writer types
 
 - [x] BLFWriter - Ported from https://github.com/hardbyte/python-can/blob/develop/can/io/blf.py
 
-### Log reader types
-
-- [ ] BLFReader
-
 ### Interfaces
 
 - [x] socketcan (Linux)
-- [ ] vector (Windows)
-- [ ] pcan (Windows, MacOS) 
 
 ## Cross-compile
 
-See [cross-compile.md](cross-compile.md) for instructions on how to use the Linaro gnueabihf 
-toolchain to create a compiled library that can execute on an armv7l chip. 
+See [cross-compile.md](cross-compile.md) for instructions on how to use the Linaro gnueabihf toolchain to create a compiled library that can execute on an armv7l chip. 
 
 ## Usage
 
