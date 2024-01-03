@@ -17,8 +17,10 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <linux/sockios.h>
+#include <linux/net_tstamp.h>
 
 #include <stdio.h>
+#include <errno.h>
 
 int create_socket() {
     int s;
@@ -48,13 +50,13 @@ int bind_socket(int sock, const char * channel) {
     return bound;
 }
 
-void fill_message(struct Message * msg, struct can_frame * frame, struct timeval *tv) {
+void fill_message(struct Message * msg, struct canfd_frame * frame, struct timeval *tv) {
     const double us_to_s = 1e-6;
     msg->timestamp = (double)tv->tv_sec + (double)tv->tv_usec * us_to_s;
     msg->arbitration_id = frame->can_id;
-    msg->dlc = frame->can_dlc;
+    msg->dlc = frame->len;
 
-    for (int i = 0; i < frame->can_dlc; i++)
+    for (int i = 0; i < frame->len; i++)
         msg->data[i] = frame->data[i];
 
     msg->is_extended_id = frame->can_id & CAN_EFF_FLAG;
@@ -89,22 +91,62 @@ void fill_frame(struct Message * msg, struct can_frame * frame) {
 }
 
 struct Message capture_message(int sock) {
-    // TODO: Use recv_msg so that the error information can be captured
-    struct Message msg;
+    struct Message my_msg;
 
-    struct can_frame frame;
     struct timeval tv;
-    ssize_t nbytes = recv(sock, &frame, sizeof (struct can_frame), CAN_MTU);
+
+    struct msghdr msg;
+    struct canfd_frame frame;
+    struct sockaddr_can addr;
+    struct iovec iov;
+    char ctrlmsg[CMSG_SPACE(sizeof(struct timeval) + 3 * sizeof(struct timespec) + sizeof(__u32))];
+
+    iov.iov_base = &frame;
+    msg.msg_name = &addr;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = &ctrlmsg;
+
+    /* these settings may be modified by recvmsg() */
+    iov.iov_len = sizeof(frame);
+    msg.msg_namelen = sizeof(addr);
+    msg.msg_controllen = sizeof(ctrlmsg);
+    msg.msg_flags = 0;
+
+    ssize_t nbytes = recvmsg(sock, &msg, 0);
 
     if (nbytes < 0) {
-        msg._recv_error = true;
-        return msg;
+        perror("read");
+        my_msg._recv_error = true;
+        return my_msg;
+    }
+    my_msg._recv_error = false;
+
+    struct cmsghdr *cmsg;
+    for (cmsg = CMSG_FIRSTHDR(&msg);
+         cmsg && (cmsg->cmsg_level == SOL_SOCKET);
+         cmsg = CMSG_NXTHDR(&msg,cmsg)) {
+        if (cmsg->cmsg_type == SO_TIMESTAMP) {
+            memcpy(&tv, CMSG_DATA(cmsg), sizeof(tv));
+        } else if (cmsg->cmsg_type == SO_TIMESTAMPING) {
+
+            struct timespec *stamp = (struct timespec *) CMSG_DATA(cmsg);
+
+            /*
+             * stamp[0] is the software timestamp
+             * stamp[1] is deprecated
+             * stamp[2] is the raw hardware timestamp
+             * See chapter 2.1.2 Receive timestamps in
+             * linux/Documentation/networking/timestamping.txt
+             */
+            tv.tv_sec = stamp[2].tv_sec;
+            tv.tv_usec = stamp[2].tv_nsec / 1000;
+        }
     }
 
-    ioctl(sock, SIOCGSTAMP, &tv);
-    fill_message(&msg, &frame, &tv);
+    fill_message(&my_msg, &frame, &tv) ;
 
-    return msg;
+    return my_msg;
 }
 
 int close_socket(int s) {
@@ -115,12 +157,39 @@ int close_socket(int s) {
     return n;
 }
 
-int socketcan_startup(void * interface, const char * channel) {
+c_can_err_t socketcan_startup(void * interface, const char * channel) {
     struct SocketCan * socket_can = (struct SocketCan*)interface;
 
+    // TODO: Handle error from create socket
     socket_can->sock = create_socket();
 
-    return bind_socket(socket_can->sock, channel);
+    // TODO: Handle error from setting socket option
+    set_socket_timeout(socket_can, socket_can->tv);
+
+    if (socket_can->hwtimestamp) {
+        const int timestamping_flags = (SOF_TIMESTAMPING_SOFTWARE |
+                                        SOF_TIMESTAMPING_RX_SOFTWARE |
+                                        SOF_TIMESTAMPING_RAW_HARDWARE);
+
+        if (setsockopt(socket_can->sock, SOL_SOCKET, SO_TIMESTAMPING,
+                       &timestamping_flags, sizeof(timestamping_flags)) < 0) {
+            perror("setsockopt SO_TIMESTAMPING is not supported by your Linux kernel");
+            return NOT_SUPPORTED;
+        }
+    } else {
+        const int timestamp_on = 1;
+
+        if (setsockopt(socket_can->sock, SOL_SOCKET, SO_TIMESTAMP,
+                       &timestamp_on, sizeof(timestamp_on)) < 0) {
+            perror("setsockopt SO_TIMESTAMP");
+            return FAILED_OPERATION;
+        }
+    }
+
+    // TODO: Handle error from socket bind
+    bind_socket(socket_can->sock, channel);
+
+    return SUCCESS;
 }
 
 int socketcan_send(void * interface, struct Message * can_msg) {
@@ -150,21 +219,47 @@ int socketcan_shutdown(void * interface) {
     return 0;
 }
 
-void socketcan_configure(void * _bus, void * args) {
-    struct Bus * bus = (struct Bus*)_bus;
-    // Note: Currently no args struct for SocketCAN
+void set_socket_timeout(struct SocketCan * socket_can, struct timeval tv) {
+    // TODO: Return error from this function
+    if (setsockopt(
+            socket_can->sock,
+            SOL_SOCKET,
+            SO_RCVTIMEO,
+            (const char*)&tv,sizeof tv) < 0) {
+        int errorno = errno;
+        printf("setsockopt failed with error: %s (errno: %d)\n",
+               strerror(errorno), errorno);
+    }
+}
 
+c_can_err_t socketcan_configure(struct Bus * bus) {
+    // Allocate memory for the interface (Note: Should be free'd in `close`)
     struct SocketCan * socket_can = malloc(sizeof (struct SocketCan));
+    if (socket_can == NULL) {
+        fprintf(stderr, "Failed to allocate memory\n");
+        return OUT_OF_MEMORY;
+    }
     bus->interface = socket_can;
+
+    // Handle unique arguments
+    if (bus->args == NULL) {
+        socket_can->hwtimestamp = false; // Default to software timestamp
+
+        socket_can->tv.tv_sec = 1;  /* 1 Sec Timeout */
+        socket_can->tv.tv_usec = 0; // Not init'ing this can cause strange errors
+    } else {
+        struct SocketCanArgs *args = (struct SocketCanArgs*)bus->args;
+
+        socket_can->hwtimestamp = args->hwtimestamp;
+
+        socket_can->tv.tv_sec = args->tv.tv_sec;
+        socket_can->tv.tv_usec = args->tv.tv_usec;
+    }
 
     bus->methods.open = &socketcan_startup;
     bus->methods.on_message_received = &socketcan_recv;
     bus->methods.send = &socketcan_send;
     bus->methods.close = &socketcan_shutdown;
 
-    bus->_configure_success = true;
-}
-
-void set_socket_timeout(struct SocketCan * socket_can, struct timeval tv) {
-    setsockopt(socket_can->sock,SOL_SOCKET,SO_RCVTIMEO,(const char*)&tv,sizeof tv);
+    return SUCCESS;
 }
