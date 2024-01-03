@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_C_STANDARD 11)
 
 set(VER_MAJOR 0)
-set(VER_MINOR 3)
-set(VER_PATCH 0)
+set(VER_MINOR 4)
+set(VER_PATCH 3)
 set(VER_STRING ${VER_MAJOR}.${VER_MINOR}.${VER_PATCH})
 
 project(c_can
@@ -14,7 +14,14 @@ project(c_can
         LANGUAGES C)
 
 include_directories(include)
-add_library(c_can SHARED src/bus.c src/message.c src/io/blf.c src/logger.c src/interfaces/socketcan.c)
+add_library(
+        c_can SHARED
+        src/bus.c
+        src/message.c
+        src/io/blf.c
+        src/logger.c
+        src/interfaces/socketcan.c
+)
 
 set_target_properties(c_can PROPERTIES VERSION ${VER_STRING} SOVERSION ${VER_STRING})
 
@@ -52,6 +59,11 @@ add_executable(r_logger scripts/r_logger.c)
 target_link_libraries(r_logger PRIVATE c_can)
 set_target_properties(c_can PROPERTIES RUNTIME r_logger)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/r_logger DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+add_executable(cansend scripts/cansend.c)
+target_link_libraries(cansend PRIVATE c_can)
+set_target_properties(c_can PROPERTIES RUNTIME cansend)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/cansend DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 install(TARGETS c_can
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

@@ -1,6 +1,6 @@
 // c-can - a CAN hardware interface and file logging library written in C.
-// Copyright (C) 2023 Diligent Code LLC
-// https://github.com/diligentcode/c-can/blob/main/LICENSE
+// Copyright (C) 2023 Jack Cook
+// https://github.com/j-c-cook/c-can/blob/main/LICENSE
 
 /**
  * Implements BLF (Binary Logging Format) write functionality. The BLF file format is proprietary
@@ -204,7 +204,7 @@ void blf_create_logger(void * logger_ptr, void * args) {
 
 void blf_on_message_received(void * logger_ptr, struct Message * can_msg) {
     struct CANMessage blf_message;
-    blf_message.channel = 1; // TODO: Utilize the actual channel
+    blf_message.channel = can_msg->channel;
     blf_message.arbitration_id = can_msg->arbitration_id;
     if (can_msg->is_extended_id)
         blf_message.arbitration_id |= CAN_MSG_EXT;

@@ -11,14 +11,27 @@ void term(int signum)
 
 
 int main() {
+    // Allow operator to cleanly kill program by hitting "CTRL+C"
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = term;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    struct Bus bus = bus_configure("socketcan", "can0", NULL);
+    // Configure a bus interface
+    struct Bus bus;
+    c_can_err_t err = bus_configure(
+            &bus,
+            "socketcan",
+            "can0",
+            1,
+            NULL);
+    if (err != SUCCESS) {
+        fprintf(stderr, "Bus configuration error\n");
+        return 1;
+    }
 
+    // Continuously print CAN messages to console
     uint16_t t_stamp[8];
 
     struct Message msg;
