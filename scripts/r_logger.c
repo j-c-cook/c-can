@@ -3,6 +3,8 @@
 #include <can/interfaces/socketcan.h>
 #include <stdlib.h>
 
+#define NUM_BUSES_MAX 4
+const char * INTERFACE_NAMES[NUM_BUSES_MAX] = {"can0", "can1", "can2", "can3"};
 
 volatile sig_atomic_t done = 0;
 
@@ -61,41 +63,59 @@ void monitor(struct Bus * can_bus, struct RotatingLogger * r_logger) {
 }
 
 int main(int argc, char *argv[]) {
-    // Read command line args
-    const char * channel = argv[1];
-    const char * file_name = argv[2];
-    int channel_idx = atoi(argv[3]);
-
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_handler = term;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
 
-    struct Bus bus = bus_configure("socketcan", channel, channel_idx, NULL);
+    const uint8_t num_buses = 3;
+    struct Bus buses[num_buses];
 
-    // Set timeout for CAN socket reading
+    // Set the hardware timestamp and bus timeout with the configurable interface args
     struct timeval tv;
     tv.tv_sec = 0;
-    tv.tv_usec = 1;
-    set_socket_timeout((struct SocketCan*)bus.interface, tv);
+    tv.tv_usec = 1000;
 
-    struct BLFWriterArgs args = {
+    struct SocketCanArgs interface_args = {
+            .hwtimestamp = true,
+            .tv = tv
+    };
+
+    for (int i = 0; i < num_buses; i++) {
+        c_can_err_t err = bus_configure(
+                &buses[i],
+                "socketcan",
+                INTERFACE_NAMES[i],
+                i + 1,
+                &interface_args);
+        if (err != SUCCESS) {
+            fprintf(stderr, "Issue configuring interface %s\n", INTERFACE_NAMES[i]);
+            return 1;
+        }
+    }
+
+    struct BLFWriterArgs io_args = {
             .compression_level = Z_DEFAULT_COMPRESSION,
     };
 
     struct RotatingLogger r_logger = create_rotating_logger(
-            file_name, 1000000, 300, (void*)&args);
+            "file.blf", 1000000, 300, (void*)&io_args);
 
-    send_address_claim(&bus, &r_logger);
+    // TODO: Make active vs. passive logging a configurable option for each BUS
+    send_address_claim(&buses[1], &r_logger);
 
     while (!done) {
-        monitor(&bus, &r_logger);
+        for (int i=0; i<num_buses; i++) {
+            monitor(&buses[i], &r_logger);
+        }
     }
 
     shutdown_rotating(&r_logger);
 
-    bus.methods.close(bus.interface);
+    for (int i=0; i<num_buses; i++) {
+        buses[i].methods.close(buses[i].interface);
+    }
 
     return 0;
 }
